@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../app/generated/prisma"
@@ -10,4 +5,326 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum UserRole {
+  CREATOR
+  BUSINESS
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum CampaignType {
+  AFFILIATE
+  CPM
+  CPA
+  CPC
+  CLIPPING
+}
+
+enum CampaignAccessType {
+  APPROVAL_REQUIRED
+  OPEN
+  HYBRID
+}
+
+enum CampaignStatus {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum TrackingLinkStatus {
+  ACTIVE
+  PAUSED
+  EXPIRED
+}
+
+enum ConversionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REVERSED
+}
+
+enum LedgerEntryType {
+  CAMPAIGN_FUNDING
+  CREATOR_EARNING
+  PLATFORM_FEE
+  REFUND
+  WITHDRAWAL
+  ADJUSTMENT
+}
+
+enum LedgerEntryStatus {
+  PENDING
+  AVAILABLE
+  PROCESSING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum WithdrawalStatus {
+  REQUESTED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id     String     @id @default(cuid())
+  phone  String     @unique
+  role   UserRole
+  status UserStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creatorProfile  CreatorProfile?
+  businessProfile BusinessProfile?
+
+  ledgerEntries LedgerEntry[]
+  withdrawals   Withdrawal[]
+
+  @@index([role])
+  @@index([status])
+}
+
+model CreatorProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  displayName     String
+  bio             String?
+  instagramHandle String?
+  telegramHandle  String?
+
+  followerCount  Int?
+  averageViews   Int?
+  engagementRate Decimal? @db.Decimal(5, 2)
+
+  verificationStatus String @default("UNVERIFIED")
+  verificationData   Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  applications  CampaignApplication[]
+  trackingLinks TrackingLink[]
+
+  @@index([instagramHandle])
+}
+
+model BusinessProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  companyName String
+  website     String?
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  campaigns Campaign[]
+
+  @@index([companyName])
+}
+
+model Campaign {
+  id         String @id @default(cuid())
+  businessId String
+
+  name        String
+  description String?
+
+  type       CampaignType
+  accessType CampaignAccessType
+  status     CampaignStatus     @default(DRAFT)
+
+  budget         Decimal @db.Decimal(18, 2)
+  reservedAmount Decimal @default(0) @db.Decimal(18, 2)
+  spentAmount    Decimal @default(0) @db.Decimal(18, 2)
+
+  currency String @default("IRR")
+
+  rewardPerConversion Decimal? @db.Decimal(18, 2)
+  rewardPerThousand   Decimal? @db.Decimal(18, 2)
+
+  startAt DateTime?
+  endAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  applications  CampaignApplication[]
+  conversions   Conversion[]
+  trackingLinks TrackingLink[]
+  ledgerEntries LedgerEntry[]
+
+  @@index([businessId])
+  @@index([status])
+  @@index([type])
+  @@index([accessType])
+  @@index([startAt, endAt])
+}
+
+model CampaignApplication {
+  id         String @id @default(cuid())
+  campaignId String
+  creatorId  String
+
+  status ApplicationStatus @default(PENDING)
+
+  appliedAt  DateTime  @default(now())
+  reviewedAt DateTime?
+
+  campaign Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator  CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, creatorId])
+  @@index([creatorId])
+  @@index([status])
+}
+
+model TrackingLink {
+  id         String @id @default(cuid())
+  campaignId String
+  creatorId  String
+
+  code   String             @unique
+  status TrackingLinkStatus @default(ACTIVE)
+
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+
+  campaign Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator  CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  clicks      Click[]
+  conversions Conversion[]
+
+  @@unique([campaignId, creatorId])
+  @@index([campaignId])
+  @@index([creatorId])
+  @@index([status])
+}
+
+model Click {
+  id             String @id @default(cuid())
+  trackingLinkId String
+
+  clickedAt DateTime @default(now())
+
+  ipHash    String?
+  userAgent String?
+  referrer  String?
+
+  trackingLink TrackingLink @relation(fields: [trackingLinkId], references: [id], onDelete: Cascade)
+
+  @@index([trackingLinkId])
+  @@index([clickedAt])
+}
+
+model Conversion {
+  id             String @id @default(cuid())
+  trackingLinkId String
+  campaignId     String
+
+  externalOrderId String?
+  amount          Decimal? @db.Decimal(18, 2)
+
+  status ConversionStatus @default(PENDING)
+
+  occurredAt DateTime  @default(now())
+  approvedAt DateTime?
+
+  trackingLink TrackingLink @relation(fields: [trackingLinkId], references: [id], onDelete: Cascade)
+  campaign     Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  ledgerEntries LedgerEntry[]
+
+  @@index([trackingLinkId])
+  @@index([campaignId])
+  @@index([status])
+  @@index([occurredAt])
+  @@index([externalOrderId])
+}
+
+model LedgerEntry {
+  id String @id @default(cuid())
+
+  userId       String?
+  campaignId   String?
+  conversionId String?
+
+  type   LedgerEntryType
+  status LedgerEntryStatus @default(PENDING)
+
+  amount   Decimal @db.Decimal(18, 2)
+  currency String  @default("IRR")
+
+  description String?
+  referenceId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  campaign   Campaign?   @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  conversion Conversion? @relation(fields: [conversionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([campaignId])
+  @@index([conversionId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Withdrawal {
+  id     String @id @default(cuid())
+  userId String
+
+  amount   Decimal @db.Decimal(18, 2)
+  currency String  @default("IRR")
+
+  status WithdrawalStatus @default(REQUESTED)
+
+  iban     String?
+  bankName String?
+
+  requestedAt DateTime  @default(now())
+  processedAt DateTime?
+
+  failureReason String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([requestedAt])
 }
