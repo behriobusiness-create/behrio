@@ -7,6 +7,391 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id              String           @id @default(cuid())
+  phone           String?          @unique
+  role            UserRole?
+  status          UserStatus       @default(ACTIVE)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  email           String?          @unique
+  emailVerified   DateTime?
+  image           String?
+  name            String?
+  passwordHash    String?
+  accounts        Account[]
+  authSessions    AuthSession[]
+  businessProfile BusinessProfile?
+  creatorProfile  CreatorProfile?
+  ledgerEntries   LedgerEntry[]
+  sessions        Session[]
+  withdrawals     Withdrawal[]
+  apiKeys         BusinessApiKey[]
+  integrations    CampaignIntegration[]
+  apiRequestLogs  ApiRequestLog[]
+
+  @@index([role])
+  @@index([status])
+}
+
+model AuthSession {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model CreatorProfile {
+  id                 String                @id @default(cuid())
+  userId             String                @unique
+  displayName        String
+  bio                String?
+  instagramHandle    String?
+  telegramHandle     String?
+  followerCount      Int?
+  averageViews       Int?
+  engagementRate     Decimal?              @db.Decimal(5, 2)
+  verificationStatus String                @default("UNVERIFIED")
+  verificationData   Json?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  applications       CampaignApplication[]
+  user               User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackingLinks      TrackingLink[]
+  reports            CampaignReport[]
+
+  @@index([instagramHandle])
+}
+
+model BusinessProfile {
+  id          String     @id @default(cuid())
+  userId      String     @unique
+  companyName String
+  website     String?
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaigns   Campaign[]
+
+  @@index([companyName])
+}
+
+model Campaign {
+  id                  String                @id @default(cuid())
+  businessId          String
+  name                String
+  description         String?
+  type                CampaignType
+  accessType          CampaignAccessType
+  status              CampaignStatus        @default(DRAFT)
+  budget              Decimal               @db.Decimal(18, 2)
+  reservedAmount      Decimal               @default(0) @db.Decimal(18, 2)
+  spentAmount         Decimal               @default(0) @db.Decimal(18, 2)
+  currency            String                @default("IRR")
+  rewardPerConversion Decimal?              @db.Decimal(18, 2)
+  rewardPerThousand   Decimal?              @db.Decimal(18, 2)
+  rewardPerClick      Decimal?              @db.Decimal(18, 2)
+  commissionPercent   Decimal?              @db.Decimal(5, 2)
+  clickRewardPerGroup Int?                  @default(1)
+  conversionGoal      Int?
+  startAt             DateTime?
+  endAt               DateTime?
+  settledAt           DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  destinationUrl      String
+  business            BusinessProfile       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  applications        CampaignApplication[]
+  conversions         Conversion[]
+  ledgerEntries       LedgerEntry[]
+  trackingLinks       TrackingLink[]
+  reports             CampaignReport[]
+  integration         CampaignIntegration?
+  apiRequestLogs      ApiRequestLog[]
+
+  @@index([businessId])
+  @@index([status])
+  @@index([type])
+  @@index([accessType])
+  @@index([startAt, endAt])
+}
+
+model CampaignApplication {
+  id         String            @id @default(cuid())
+  campaignId String
+  creatorId  String
+  status     ApplicationStatus @default(PENDING)
+  appliedAt  DateTime          @default(now())
+  reviewedAt DateTime?
+  campaign   Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator    CreatorProfile    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, creatorId])
+  @@index([creatorId])
+  @@index([status])
+}
+
+model CampaignReport {
+  id                 String           @id @default(cuid())
+  campaignId         String
+  creatorId          String
+  screenshotUrl      String
+  claimedImpressions Int
+  status             ReportStatus     @default(PENDING)
+  note               String?
+  createdAt          DateTime         @default(now())
+  reviewedAt         DateTime?
+  campaign           Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator            CreatorProfile   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([creatorId])
+  @@index([status])
+}
+
+model TrackingLink {
+  id          String             @id @default(cuid())
+  campaignId  String
+  creatorId   String
+  code        String             @unique
+  status      TrackingLinkStatus @default(ACTIVE)
+  createdAt   DateTime           @default(now())
+  expiresAt   DateTime?
+  clicks      Click[]
+  conversions Conversion[]
+  campaign    Campaign           @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator     CreatorProfile     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, creatorId])
+  @@index([campaignId])
+  @@index([creatorId])
+  @@index([status])
+}
+
+model Click {
+  id             String       @id @default(cuid())
+  clickId        String       @unique
+  trackingLinkId String
+  clickedAt      DateTime     @default(now())
+  ipHash         String?
+  userAgent      String?
+  referrer       String?
+  creditedAt     DateTime?
+  trackingLink   TrackingLink @relation(fields: [trackingLinkId], references: [id], onDelete: Cascade)
+  conversion     Conversion?
+
+  @@index([trackingLinkId])
+  @@index([clickedAt])
+}
+
+model Conversion {
+  id              String           @id @default(cuid())
+  trackingLinkId  String
+  campaignId      String
+  clickId         String?          @unique
+  externalOrderId String?
+  amount          Decimal?         @db.Decimal(18, 2)
+  status          ConversionStatus @default(PENDING)
+  occurredAt      DateTime         @default(now())
+  approvedAt      DateTime?
+  screenshot      String?
+  source          String?          @default("MANUAL")
+  campaign        Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  trackingLink    TrackingLink     @relation(fields: [trackingLinkId], references: [id], onDelete: Cascade)
+  click           Click?           @relation(fields: [clickId], references: [clickId], onDelete: SetNull)
+  ledgerEntries   LedgerEntry[]
+
+  @@unique([campaignId, externalOrderId])
+  @@index([trackingLinkId])
+  @@index([campaignId])
+  @@index([status])
+  @@index([occurredAt])
+  @@index([externalOrderId])
+  @@index([source])
+}
+
+model LedgerEntry {
+  id           String            @id @default(cuid())
+  userId       String?
+  campaignId   String?
+  conversionId String?
+  type         LedgerEntryType
+  status       LedgerEntryStatus @default(PENDING)
+  amount       Decimal           @db.Decimal(18, 2)
+  currency     String            @default("IRR")
+  description  String?
+  referenceId  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  campaign     Campaign?         @relation(fields: [campaignId], references: [id])
+  conversion   Conversion?       @relation(fields: [conversionId], references: [id])
+  user         User?             @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([campaignId])
+  @@index([conversionId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Withdrawal {
+  id               String           @id @default(cuid())
+  userId           String
+  amount           Decimal          @db.Decimal(18, 2)
+  grossAmount      Decimal?         @db.Decimal(18, 2)
+  commissionRate   Decimal?         @db.Decimal(5, 2)
+  commissionAmount Decimal?         @db.Decimal(18, 2)
+  netAmount        Decimal?         @db.Decimal(18, 2)
+  currency         String           @default("IRR")
+  status        WithdrawalStatus @default(REQUESTED)
+  iban          String?
+  bankName      String?
+  requestedAt   DateTime         @default(now())
+  processedAt   DateTime?
+  failureReason String?
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([requestedAt])
+}
+
+model OtpCode {
+  id        String    @id @default(cuid())
+  phone     String
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  attempts  Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  @@index([phone])
+  @@index([expiresAt])
+}
+
+model EmailOtp {
+  id        String   @id @default(cuid())
+  email     String
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model BusinessApiKey {
+  id             String         @id @default(cuid())
+  userId         String
+  name           String
+  keyPrefix      String
+  keyHash        String         @unique
+  lastUsedAt     DateTime?
+  revokedAt      DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime       @default(now())
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requestLogs    ApiRequestLog[]
+  integrations   CampaignIntegration[]
+
+  @@index([userId])
+  @@index([revokedAt])
+}
+
+model CampaignIntegration {
+  id              String            @id @default(cuid())
+  campaignId      String            @unique
+  userId          String
+  apiKeyId        String?
+  status          IntegrationStatus @default(NOT_CONFIGURED)
+  verifiedAt      DateTime?
+  lastVerifiedAt  DateTime?
+  revokedAt       DateTime?
+  testClickId     String?           @unique
+  verifiedBy      String?
+  verificationMeta Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  campaign        Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKey          BusinessApiKey?   @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([campaignId])
+}
+
+model ApiRequestLog {
+  id          String   @id @default(cuid())
+  requestId   String   @unique
+  userId      String?
+  campaignId  String?
+  apiKeyId    String?
+  endpoint    String
+  method      String
+  statusCode  Int
+  errorCode   String?
+  ipHash      String?
+  createdAt   DateTime @default(now())
+  metadata    Json?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  campaign    Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  apiKey      BusinessApiKey? @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([campaignId])
+  @@index([apiKeyId])
+  @@index([createdAt])
+}
+
+enum IntegrationStatus {
+  NOT_CONFIGURED
+  CONFIGURED
+  VERIFICATION_PENDING
+  VERIFIED
+  FAILED
+  DISABLED
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  expires      DateTime
+  sessionToken String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 enum UserRole {
   CREATOR
   BUSINESS
@@ -49,6 +434,12 @@ enum ApplicationStatus {
   WITHDRAWN
 }
 
+enum ReportStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum TrackingLinkStatus {
   ACTIVE
   PAUSED
@@ -86,276 +477,4 @@ enum WithdrawalStatus {
   COMPLETED
   FAILED
   CANCELLED
-}
-
-model User {
-  id     String     @id @default(cuid())
-  phone  String     @unique
-  role   UserRole
-  status UserStatus @default(ACTIVE)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  creatorProfile  CreatorProfile?
-  businessProfile BusinessProfile?
-
-  ledgerEntries LedgerEntry[]
-  withdrawals   Withdrawal[]
-
-  sessions Session[]
-
-  @@index([role])
-  @@index([status])
-}
-
-model CreatorProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-
-  displayName     String
-  bio             String?
-  instagramHandle String?
-  telegramHandle  String?
-
-  followerCount  Int?
-  averageViews   Int?
-  engagementRate Decimal? @db.Decimal(5, 2)
-
-  verificationStatus String @default("UNVERIFIED")
-  verificationData   Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  applications  CampaignApplication[]
-  trackingLinks TrackingLink[]
-
-  @@index([instagramHandle])
-}
-
-model BusinessProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-
-  companyName String
-  website     String?
-  description String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  campaigns Campaign[]
-
-  @@index([companyName])
-}
-
-model Campaign {
-  id         String @id @default(cuid())
-  businessId String
-
-  name        String
-  description String?
-
-  type       CampaignType
-  accessType CampaignAccessType
-  status     CampaignStatus     @default(DRAFT)
-
-  budget         Decimal @db.Decimal(18, 2)
-  reservedAmount Decimal @default(0) @db.Decimal(18, 2)
-  spentAmount    Decimal @default(0) @db.Decimal(18, 2)
-
-  currency String @default("IRR")
-
-  rewardPerConversion Decimal? @db.Decimal(18, 2)
-  rewardPerThousand   Decimal? @db.Decimal(18, 2)
-
-  startAt DateTime?
-  endAt   DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  business BusinessProfile @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  applications  CampaignApplication[]
-  conversions   Conversion[]
-  trackingLinks TrackingLink[]
-  ledgerEntries LedgerEntry[]
-
-  @@index([businessId])
-  @@index([status])
-  @@index([type])
-  @@index([accessType])
-  @@index([startAt, endAt])
-}
-
-model CampaignApplication {
-  id         String @id @default(cuid())
-  campaignId String
-  creatorId  String
-
-  status ApplicationStatus @default(PENDING)
-
-  appliedAt  DateTime  @default(now())
-  reviewedAt DateTime?
-
-  campaign Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  creator  CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-
-  @@unique([campaignId, creatorId])
-  @@index([creatorId])
-  @@index([status])
-}
-
-model TrackingLink {
-  id         String @id @default(cuid())
-  campaignId String
-  creatorId  String
-
-  code   String             @unique
-  status TrackingLinkStatus @default(ACTIVE)
-
-  createdAt DateTime  @default(now())
-  expiresAt DateTime?
-
-  campaign Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  creator  CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-
-  clicks      Click[]
-  conversions Conversion[]
-
-  @@unique([campaignId, creatorId])
-  @@index([campaignId])
-  @@index([creatorId])
-  @@index([status])
-}
-
-model Click {
-  id             String @id @default(cuid())
-  trackingLinkId String
-
-  clickedAt DateTime @default(now())
-
-  ipHash    String?
-  userAgent String?
-  referrer  String?
-
-  trackingLink TrackingLink @relation(fields: [trackingLinkId], references: [id], onDelete: Cascade)
-
-  @@index([trackingLinkId])
-  @@index([clickedAt])
-}
-
-model Conversion {
-  id             String @id @default(cuid())
-  trackingLinkId String
-  campaignId     String
-
-  externalOrderId String?
-  amount          Decimal? @db.Decimal(18, 2)
-
-  status ConversionStatus @default(PENDING)
-
-  occurredAt DateTime  @default(now())
-  approvedAt DateTime?
-
-  trackingLink TrackingLink @relation(fields: [trackingLinkId], references: [id], onDelete: Cascade)
-  campaign     Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-
-  ledgerEntries LedgerEntry[]
-
-  @@index([trackingLinkId])
-  @@index([campaignId])
-  @@index([status])
-  @@index([occurredAt])
-  @@index([externalOrderId])
-}
-
-model LedgerEntry {
-  id String @id @default(cuid())
-
-  userId       String?
-  campaignId   String?
-  conversionId String?
-
-  type   LedgerEntryType
-  status LedgerEntryStatus @default(PENDING)
-
-  amount   Decimal @db.Decimal(18, 2)
-  currency String  @default("IRR")
-
-  description String?
-  referenceId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  campaign   Campaign?   @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  conversion Conversion? @relation(fields: [conversionId], references: [id], onDelete: SetNull)
-
-  @@index([userId])
-  @@index([campaignId])
-  @@index([conversionId])
-  @@index([type])
-  @@index([status])
-  @@index([createdAt])
-}
-
-model Withdrawal {
-  id     String @id @default(cuid())
-  userId String
-
-  amount   Decimal @db.Decimal(18, 2)
-  currency String  @default("IRR")
-
-  status WithdrawalStatus @default(REQUESTED)
-
-  iban     String?
-  bankName String?
-
-  requestedAt DateTime  @default(now())
-  processedAt DateTime?
-
-  failureReason String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([status])
-  @@index([requestedAt])
-}
-
-model OtpCode {
-  id        String    @id @default(cuid())
-  phone     String
-  codeHash  String
-  expiresAt DateTime
-  usedAt    DateTime?
-  attempts  Int       @default(0)
-
-  createdAt DateTime @default(now())
-
-  @@index([phone])
-  @@index([expiresAt])
-}
-
-model Session {
-  id        String   @id @default(cuid())
-  userId    String
-  tokenHash String   @unique
-  expiresAt DateTime
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([expiresAt])
 }

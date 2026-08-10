@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #080a09;
+  --foreground: #f5f7f5;
+}
+
+@theme {
+  --color-bg: #080a09;
+  --color-surface: #0d100e;
+  --color-card: #111512;
+  --color-hover: #161b17;
+  --color-line: #202720;
+  --color-primary: #22c55e;
+  --color-primary-bright: #4ade80;
+  --color-primary-soft: #86efac;
+  --color-fg: #f5f7f5;
+  --color-muted: #a1aaa3;
+  --color-subtle: #69736c;
+  --color-danger: #f87171;
+  --color-warn: #fbbf24;
+  --color-info: #7dd3fc;
+
+  --radius-card: 12px;
+
+  --font-sans: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
+}
+
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+}
+
+::selection {
+  background: rgba(34, 197, 94, 0.28);
+  color: #f5f7f5;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #202720;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2a332b;
+  background-clip: content-box;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes behrio-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-rise {
+  animation: behrio-fade-in 220ms ease-out both;
+}
+
+@keyframes behrio-shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #111512 25%,
+    #181d19 50%,
+    #111512 75%
+  );
+  background-size: 800px 100%;
+  animation: behrio-shimmer 1.4s infinite linear;
 }

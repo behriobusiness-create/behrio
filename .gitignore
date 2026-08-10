@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -41,3 +42,11 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# user-uploaded content (local storage driver writes here)
+/public/uploads/
+
+# local AI tooling config (not app code)
+/.agents/
+/.claude/
+/.windsurf/

@@ -1,65 +1,101 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Logo } from "@/components/logo";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+export default async function Home() {
+  const user = await getCurrentUser();
+
+  if (user) {
+    if (user.role === "ADMIN") redirect("/admin");
+    if (user.role === "BUSINESS") redirect("/business");
+    if (user.role === "CREATOR") redirect("/creator");
+    redirect("/onboarding");
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <main dir="rtl" className="min-h-screen bg-bg">
+      <header className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+        <Logo />
+        <div className="flex items-center gap-2">
+          <Link
+            href="/login"
+            className="rounded-xl px-4 py-2 text-sm font-semibold text-muted transition-colors hover:bg-hover"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            ورود
+          </Link>
+          <Link
+            href="/signup"
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-bg transition-colors hover:bg-primary-bright"
           >
-            Documentation
-          </a>
+            شروع کنید
+          </Link>
         </div>
-      </main>
-    </div>
+      </header>
+
+      <section className="mx-auto max-w-6xl px-5 pb-16 pt-24 text-center">
+        <h1 className="mx-auto max-w-3xl text-5xl font-extrabold uppercase leading-tight tracking-[0.18em] text-fg md:text-7xl">
+          BEHIRO
+        </h1>
+        <p className="mx-auto mt-6 max-w-2xl text-lg font-semibold leading-8 text-primary-soft md:text-xl">
+          بساز، فاند کن، دیده شو
+        </p>
+        <div className="mt-10 flex items-center justify-center gap-3">
+          <Link
+            href="/signup"
+            className="rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-bg transition-colors hover:bg-primary-bright"
+          >
+            شروع کنید
+          </Link>
+          <Link
+            href="/login"
+            className="rounded-xl border border-line bg-card px-8 py-3.5 text-base font-semibold text-fg transition-colors hover:bg-hover"
+          >
+            مشاهده کمپین‌ها
+          </Link>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-5 pb-24">
+        <div className="grid gap-5 md:grid-cols-3">
+          <div className="rounded-2xl border border-line bg-card p-7">
+            <h3 className="text-lg font-semibold text-fg">
+              ساخت آسان کمپین
+            </h3>
+            <p className="mt-2 text-sm leading-7 text-muted">
+              برندها کمپین‌های CPC و CPA ایجاد می‌کنند، بودجه تعیین می‌کنند و
+              با تولیدکنندگان محتوا همکاری می‌کنند.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-line bg-card p-7">
+            <h3 className="text-lg font-semibold text-fg">
+              درآمد از محتوا
+            </h3>
+            <p className="mt-2 text-sm leading-7 text-muted">
+              تولیدکنندگان محتوا از طریق لینک اختصاصی خود به‌ازای هر کلیک و
+              هر تبدیل درآمد قابل برداشت کسب می‌کنند.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-line bg-card p-7">
+            <h3 className="text-lg font-semibold text-fg">
+              گزارش‌گیری شفاف
+            </h3>
+            <p className="mt-2 text-sm leading-7 text-muted">
+              کلیک‌ها، تبدیل‌ها و هزینه‌ها به‌صورت لحظه‌ای پیگیری و در
+              داشبورد شما نمایش داده می‌شود.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-line">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-5 py-8 text-sm text-muted md:flex-row">
+          <Logo href="/" />
+          <p>© 2025 Behrio. تمامی حقوق محفوظ است.</p>
+        </div>
+      </footer>
+    </main>
   );
 }
