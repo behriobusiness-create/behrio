@@ -28,6 +28,7 @@ function SignupForm() {
   const [step, setStep] = useState<"identifier" | "code" | "role">(
     "identifier"
   );
+  const [skipOtp, setSkipOtp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [resendIn, setResendIn] = useState(0);
@@ -49,6 +50,34 @@ function SignupForm() {
 
     if (!identifier.trim()) {
       setError("شماره موبایل یا ایمیل را وارد کنید.");
+      return;
+    }
+
+    if (skipOtp) {
+      setLoading(true);
+      try {
+        const isEmail = identifier.includes("@");
+        const res = await fetch("/api/auth/signup-direct", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            isEmail ? { email: identifier } : { phone: identifier }
+          ),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          setError(data.error || "ثبت‌نام ناموفق بود.");
+          return;
+        }
+
+        setStep("role");
+      } catch {
+        setError("خطا در اتصال به سرور.");
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -222,12 +251,22 @@ function SignupForm() {
                   </p>
                 )}
 
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-muted">
+                  <input
+                    type="checkbox"
+                    checked={skipOtp}
+                    onChange={(e) => setSkipOtp(e.target.checked)}
+                    className="h-4 w-4 rounded border-line accent-primary"
+                  />
+                  ثبت‌نام سریع بدون دریافت کد تأیید
+                </label>
+
                 <button
                   type="submit"
                   disabled={loading}
                   className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-bg transition-colors hover:bg-primary-bright disabled:opacity-50"
                 >
-                  {loading ? "در حال ارسال..." : "ارسال کد"}
+                  {loading ? "در حال بررسی..." : skipOtp ? "ادامه" : "ارسال کد"}
                 </button>
               </form>
             )}
