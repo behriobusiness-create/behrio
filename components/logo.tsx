@@ -1,33 +1,27 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function Logo({
   href = "/",
   className = "",
-  light = false,
 }: {
   href?: string;
   className?: string;
-  light?: boolean;
 }) {
   return (
     <Link
       href={href}
-      className={`flex items-center gap-2.5 ${className}`}
+      aria-label="Behrio"
+      className={`inline-flex items-center ${className}`}
     >
-      <span
-        className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold ${
-          light ? "bg-card text-fg border border-line" : "bg-primary text-bg"
-        }`}
-      >
-        B
-      </span>
-      <span
-        className={`text-lg font-semibold tracking-tight ${
-          light ? "text-fg" : "text-fg"
-        }`}
-      >
-        Behrio
-      </span>
+      <Image
+        src="/behrio-logo.png"
+        alt="Behrio"
+        width={800}
+        height={224}
+        priority
+        className="h-8 w-auto"
+      />
     </Link>
   );
 }

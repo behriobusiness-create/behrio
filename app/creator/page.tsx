@@ -107,9 +107,8 @@ export default async function CreatorDashboardPage({
           name: true,
           type: true,
           status: true,
-          rewardPerConversion: true,
-          rewardPerThousand: true,
-          rewardPerClick: true,
+          cpm: true,
+          verifiedImpressions: true,
           business: { select: { companyName: true } },
         },
       },
@@ -269,29 +268,8 @@ export default async function CreatorDashboardPage({
     };
   });
 
-  const referralCampaigns = approved
-    .filter((a) => a.campaign.type === "AFFILIATE")
-    .map((a) => {
-      const campaignId = a.campaign.id;
-      const clicks = clicksByCampaign.get(campaignId) ?? 0;
-      const convs = convsByCampaign.get(campaignId) ?? 0;
-      return {
-        id: a.id,
-        campaignId: a.campaign.id,
-        name: a.campaign.name,
-        business: a.campaign.business.companyName,
-        status: a.campaign.status,
-        commission: a.campaign.rewardPerConversion,
-        clicks,
-        conversions: convs,
-        earnings: earningsByCampaign.get(campaignId) ?? 0,
-      };
-    });
-
   const cpmCampaigns = approved
-    .filter(
-      (a) => a.campaign.type === "CPM" || a.campaign.type === "CLIPPING",
-    )
+    .filter((a) => a.campaign.type === "CPM")
     .map((a) => {
       const campaignId = a.campaign.id;
       const clicks = clicksByCampaign.get(campaignId) ?? 0;
@@ -302,7 +280,7 @@ export default async function CreatorDashboardPage({
         name: a.campaign.name,
         business: a.campaign.business.companyName,
         status: a.campaign.status,
-        ratePerThousand: a.campaign.rewardPerThousand,
+        cpm: a.campaign.cpm,
         clicks,
         conversions: convs,
         earnings: earningsByCampaign.get(campaignId) ?? 0,
@@ -312,18 +290,18 @@ export default async function CreatorDashboardPage({
   const reportCampaigns: {
     id: string;
     name: string;
-    ratePerThousand: number | null;
+    cpm: number | null;
   }[] = approved
     .filter(
       (a) =>
         a.campaign.status === "ACTIVE" &&
-        (a.campaign.type === "CPM" || a.campaign.type === "CLIPPING") &&
-        a.campaign.rewardPerThousand != null,
+        a.campaign.type === "CPM" &&
+        a.campaign.cpm != null,
     )
     .map((a) => ({
       id: a.campaign.id,
       name: a.campaign.name,
-      ratePerThousand: toNumber(a.campaign.rewardPerThousand),
+      cpm: toNumber(a.campaign.cpm),
     }));
 
   const activity: ActivityItem[] = [
@@ -492,54 +470,8 @@ export default async function CreatorDashboardPage({
 
         <div className="grid gap-4 lg:grid-cols-2">
           <SectionCard
-            title="همکاری در فروش (رفرال)"
-            subtitle="کمیسیون حاصل از فروش لینک شما"
-          >
-            {referralCampaigns.length === 0 ? (
-              <p className="px-5 py-10 text-center text-sm text-subtle">
-                هنوز در کمپین همکاری فروشی فعال نیستید.
-              </p>
-            ) : (
-              <ul className="divide-y divide-line/60">
-                {referralCampaigns.map((c) => (
-                  <li
-                    key={c.id}
-                    className="flex items-center justify-between gap-3 px-5 py-3.5"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-fg">
-                        {c.name}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-subtle">
-                        {c.business} ·{" "}
-                        {c.commission
-                          ? `${formatRials(toNumber(c.commission))} کمیسیون / فروش`
-                          : "کمیسیون بر اساس تبدیل"}
-                      </p>
-                      <div className="mt-2">
-                        <TrackingLinkBox
-                          campaignId={c.campaignId}
-                          code={trackingByCampaign.get(c.campaignId) ?? undefined}
-                        />
-                      </div>
-                    </div>
-                    <div className="shrink-0 text-left">
-                      <p className="tabular text-sm font-semibold text-primary-soft">
-                        {formatRials(c.earnings)}
-                      </p>
-                      <p className="tabular text-[11px] text-subtle">
-                        {formatNumber(c.clicks)} کلیک · {formatNumber(c.conversions)} تبدیل
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </SectionCard>
-
-          <SectionCard
-            title="نمایش و برندینگ (CPM/CLIPPING)"
-            subtitle="پرداخت به ازای هر هزار نمایش"
+            title="نمایش و برندینگ (CPM)"
+            subtitle="پرداخت به ازای هر هزار نمایش تأییدشده"
             actions={
               reportCampaigns.length > 0 ? (
                 <SubmitReportButton campaigns={reportCampaigns} />
@@ -563,8 +495,8 @@ export default async function CreatorDashboardPage({
                       </p>
                       <p className="mt-0.5 truncate text-xs text-subtle">
                         {c.business} ·{" "}
-                        {c.ratePerThousand
-                          ? `${formatRials(toNumber(c.ratePerThousand))} / هزار نمایش`
+                        {c.cpm
+                          ? `${formatRials(toNumber(c.cpm))} / هزار نمایش تأییدشده`
                           : "نرخ بر اساس نمایش"}
                       </p>
                     </div>

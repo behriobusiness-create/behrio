@@ -7,7 +7,7 @@ import { IconUpload, IconX, IconChart, IconCheck } from "@/components/icons";
 type ReportCampaign = {
   id: string;
   name: string;
-  ratePerThousand?: number | null;
+  cpm?: number | null;
 };
 
 export function SubmitReportButton({
@@ -191,13 +191,13 @@ export function SubmitReportButton({
                     </option>
                   ))}
                 </select>
-                {selected?.ratePerThousand != null && (
+                {selected?.cpm != null && (
                   <p className="mt-1.5 text-xs text-subtle">
-                    پاداش:{" "}
+                    نرخ CPM:{" "}
                     {new Intl.NumberFormat("fa-IR").format(
-                      Math.round(selected.ratePerThousand)
+                      Math.round(selected.cpm)
                     )}{" "}
-                    تومان / هر ۱۰۰۰ نمایش
+                    تومان / هر ۱۰۰۰ نمایش تأییدشده
                   </p>
                 )}
               </div>

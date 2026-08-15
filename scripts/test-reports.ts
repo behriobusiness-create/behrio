@@ -56,7 +56,7 @@ async function main() {
       destinationUrl: "https://example.com",
       budget: new Prisma.Decimal(3_000_000),
       reservedAmount: new Prisma.Decimal(3_000_000),
-      rewardPerThousand: new Prisma.Decimal(200_000),
+      cpm: new Prisma.Decimal(200_000),
     },
   });
 
@@ -90,10 +90,11 @@ async function main() {
 
   const reportId = reportBody.report.id;
 
-  // 2) Business approves → 5 groups × 200,000 = 1,000,000
+  // 2) Business approves → 5 groups × 200,000 = 1,000,000 (single ledger entry)
   const approveRes = await fetch(`${BASE}/api/campaign-reports/${reportId}/approve`, {
     method: "POST",
     headers: businessHeaders,
+    body: JSON.stringify({ verifiedImpressions: 5000 }),
   });
   const approveBody = await approveRes.json();
   console.log("approve report:", approveRes.status, approveBody);
@@ -116,9 +117,10 @@ async function main() {
   console.log("report status:", reportAfter.status);
 
   const pass =
-    ledger.length === 5 &&
+    ledger.length === 1 &&
     ledgerTotal === 1_000_000 &&
     Number(campaignAfter.spentAmount) === 1_000_000 &&
+    reportAfter.verifiedImpressions === 5000 &&
     reportAfter.status === "APPROVED";
 
   console.log(pass ? "\nTEST PASSED ✅" : "\nTEST FAILED ❌");

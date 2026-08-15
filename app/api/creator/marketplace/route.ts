@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { CampaignType } from "@/app/generated/prisma/client";
-
-const VALID_TYPES = new Set<string>(Object.values(CampaignType));
 
 
 export async function GET(
@@ -36,10 +33,6 @@ export async function GET(
       searchParams.get("q");
 
 
-    const type =
-      searchParams.get("type");
-
-
     const now = new Date();
 
     const campaigns =
@@ -48,6 +41,7 @@ export async function GET(
         where: {
 
           status:"ACTIVE",
+          type:"CPM",
 
           AND: [
             {
@@ -65,11 +59,6 @@ export async function GET(
               mode:"insensitive",
             },
           }),
-
-
-          ...(type && VALID_TYPES.has(type)
-            ? { type: type as CampaignType }
-            : {}),
 
         },
 

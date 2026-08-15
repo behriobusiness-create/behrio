@@ -62,8 +62,6 @@ export default async function AdminConversionsPage() {
           select: {
             name: true,
             type: true,
-            rewardPerConversion: true,
-            commissionPercent: true,
             business: { select: { companyName: true } },
           },
         },
@@ -81,14 +79,15 @@ export default async function AdminConversionsPage() {
       items={nav}
       activeHref="/admin/conversions"
       title="تبدیل‌ها"
-      subtitle="بررسی فروش‌های ثبت‌شده (ریدایرکت یا API) و تأیید پرداخت به خالقان"
+      subtitle="سوابق فروش‌های ثبت‌شده (ریدایرکت یا API)"
     >
       <div className="space-y-6">
         <div className="flex items-center gap-3 rounded-2xl border border-info/25 bg-info/10 p-4">
           <IconChart className="h-5 w-5 shrink-0 text-info" />
           <p className="text-sm leading-6 text-info/90">
-            با تأیید هر تبدیل، دستمزد فروش به خالق پرداخت و از بودجه کمپین کسر
-            می‌شود. {pendingCount} تبدیل در انتظار بررسی است.
+            کمپین‌ها صرفاً بر اساس نمایش (CPM) پرداخت می‌شوند؛ تبدیل فروش درآمدی
+            برای خالق ایجاد نمی‌کند و صرفاً برای سوابق ثبت می‌شود.{" "}
+            {pendingCount} تبدیل در انتظار بررسی است.
           </p>
         </div>
 
@@ -112,10 +111,6 @@ export default async function AdminConversionsPage() {
               {conversions.map((conversion) => {
                 const amount = toNumber(conversion.amount ?? 0);
                 const cmp = conversion.campaign;
-                const reward =
-                  cmp.type === "AFFILIATE" && cmp.commissionPercent
-                    ? (amount * toNumber(cmp.commissionPercent)) / 100
-                    : toNumber(cmp.rewardPerConversion ?? 0);
                 return (
                   <li key={conversion.id} className="px-5 py-4">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -148,11 +143,6 @@ export default async function AdminConversionsPage() {
                             {conversion.externalOrderId ?? "—"}
                           </span>{" "}
                           · فروش: {amount.toLocaleString("fa-IR")} ریال
-                          {reward > 0 && (
-                            <span className="ms-2 font-semibold text-primary-soft">
-                              دستمزد خالق: {reward.toLocaleString("fa-IR")} ریال
-                            </span>
-                          )}
                         </p>
                         <p className="mt-0.5 text-[11px] text-subtle">
                           {new Intl.DateTimeFormat("fa-IR", {

@@ -42,7 +42,7 @@ export default async function BusinessReportsPage() {
   const reports = await prisma.campaignReport.findMany({
     where: { campaign: { businessId: fullUser.businessProfile!.id } },
     include: {
-      campaign: { select: { id: true, name: true, type: true, rewardPerThousand: true } },
+      campaign: { select: { id: true, name: true, type: true, cpm: true } },
       creator: {
         select: {
           displayName: true,
@@ -86,10 +86,8 @@ export default async function BusinessReportsPage() {
           {reports.map((report) => {
             const groups = Math.floor(report.claimedImpressions / 1000);
             const expected =
-              report.campaign.rewardPerThousand &&
-              groups > 0 &&
-              report.status === "PENDING"
-                ? toNumber(report.campaign.rewardPerThousand) * groups
+              report.campaign.cpm && groups > 0 && report.status === "PENDING"
+                ? toNumber(report.campaign.cpm) * groups
                 : null;
 
             return (
@@ -124,6 +122,16 @@ export default async function BusinessReportsPage() {
                         (={new Intl.NumberFormat("fa-IR").format(groups)} گروهِ ۱۰۰۰تایی)
                       </span>
                     </p>
+                    {report.verifiedImpressions != null && (
+                      <p className="mt-1 text-sm text-muted">
+                        نمایش تأییدشده:{" "}
+                        <span className="font-semibold">
+                          {new Intl.NumberFormat("fa-IR").format(
+                            report.verifiedImpressions
+                          )}
+                        </span>
+                      </p>
+                    )}
                     {expected !== null && (
                       <p className="mt-1 text-sm text-muted">
                         مبلغ قابل پرداخت:{" "}

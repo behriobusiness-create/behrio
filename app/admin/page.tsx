@@ -70,7 +70,6 @@ export default async function AdminDashboardPage({
       spentAmount: true,
       createdAt: true,
       business: { select: { companyName: true } },
-      integration: true,
       _count: { select: { applications: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -400,10 +399,7 @@ export default async function AdminDashboardPage({
                         {formatNumber(campaign._count.applications)} درخواست
                       </p>
                     </div>
-                    <CampaignReviewActions
-                      campaignId={campaign.id}
-                      canApprove={campaign.integration?.status === "VERIFIED"}
-                    />
+                    <CampaignReviewActions campaignId={campaign.id} />
                   </li>
                 ))}
               </ul>

@@ -12,76 +12,32 @@ export type CampaignView = {
   accessType: string;
   budget: number;
   destinationUrl: string;
-  rewardPerClick: number | null;
-  rewardPerConversion: number | null;
-  rewardPerThousand: number | null;
-  commissionPercent: number | null;
-  clickRewardPerGroup: number | null;
+  cpm: number | null;
   business: string;
   applicationStatus?: "PENDING" | "APPROVED" | "REJECTED" | "NONE";
 };
 
-function formatPercent(n: number): string {
-  return `${new Intl.NumberFormat("fa-IR").format(n)}٪`;
-}
-
-function rewardLabel(type: string, group: number | null): string {
-  switch (type) {
-    case "CPC":
-    case "CPA":
-      return `به‌ازای هر ${group && group > 1 ? new Intl.NumberFormat("fa-IR").format(group) : ""} کلیک`;
-    case "CPM":
-    case "CLIPPING":
-      return "به‌ازای هر ۱۰۰۰ نمایش";
-    case "AFFILIATE":
-      return "کمیسیون از فروش";
-    default:
-      return "پاداش";
-  }
+function rewardLabel(): string {
+  return "به‌ازای هر ۱۰۰۰ نمایش";
 }
 
 function rewardRows(c: CampaignView): { label: string; value: string }[] {
   const rows: { label: string; value: string }[] = [];
-  if ((c.type === "CPC" || c.type === "CPA") && c.rewardPerClick != null) {
+  if (c.cpm != null) {
     rows.push({
-      label: rewardLabel(c.type, c.clickRewardPerGroup),
-      value: formatRials(c.rewardPerClick),
-    });
-  }
-  if ((c.type === "CPM" || c.type === "CLIPPING") && c.rewardPerThousand != null) {
-    rows.push({
-      label: "به‌ازای هر ۱۰۰۰ نمایش",
-      value: formatRials(c.rewardPerThousand),
-    });
-  }
-  if (c.type === "AFFILIATE") {
-    rows.push({
-      label: "کمیسیون از فروش",
-      value:
-        c.commissionPercent != null
-          ? formatPercent(c.commissionPercent)
-          : c.rewardPerConversion != null
-            ? formatRials(c.rewardPerConversion)
-            : "—",
+      label: rewardLabel(),
+      value: formatRials(c.cpm),
     });
   }
   return rows;
 }
 
 const typeLabels: Record<string, string> = {
-  CPC: "پرداخت به‌ازای کلیک",
-  CPA: "پرداخت گروهی به‌ازای کلیک",
   CPM: "پرداخت به‌ازای هزار نمایش",
-  AFFILIATE: "همکاری فروش",
-  CLIPPING: "کلیپینگ",
 };
 
 const typeTone: Record<string, string> = {
-  CPC: "border-info/25 bg-info/10 text-info",
-  CPA: "border-primary/25 bg-primary/10 text-primary-soft",
   CPM: "border-warn/25 bg-warn/10 text-warn",
-  AFFILIATE: "border-line bg-hover text-muted",
-  CLIPPING: "border-line bg-hover text-muted",
 };
 
 function formatRials(n: number): string {

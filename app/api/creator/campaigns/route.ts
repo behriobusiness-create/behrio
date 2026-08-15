@@ -52,6 +52,7 @@ if (!fullUser.creatorProfile) {
 const campaigns = await prisma.campaign.findMany({
   where: {
     status: "ACTIVE",
+    type: "CPM",
     OR: [
       {
         accessType: "OPEN",
@@ -72,8 +73,8 @@ const campaigns = await prisma.campaign.findMany({
     accessType: true,
     budget: true,
     currency: true,
-    rewardPerConversion: true,
-    rewardPerThousand: true,
+    cpm: true,
+    verifiedImpressions: true,
     startAt: true,
     endAt: true,
     createdAt: true,

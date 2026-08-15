@@ -26,7 +26,7 @@ export default async function ConversionCompletePage({
   const orderId = params.orderId?.trim() ?? "";
   const amount = parseAmount(params.amount);
 
-  const viewCampaignTypes = new Set(["CPM", "CLIPPING"]);
+  const viewCampaignTypes = new Set(["CPM"]);
 
   if (!clickId) {
     return (

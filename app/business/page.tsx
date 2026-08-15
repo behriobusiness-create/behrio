@@ -40,23 +40,13 @@ import { getCommissionConfig } from "@/lib/finance/commission";
 const DONUT_COLORS = ["#22c55e", "#4ade80", "#86efac", "#7dd3fc", "#fbbf24"];
 
 const typeLabels: Record<string, string> = {
-  CPC: "پرداخت به‌ازای کلیک",
-  CPA: "پرداخت گروهی به‌ازای کلیک",
   CPM: "پرداخت به‌ازای هزار نمایش",
-  AFFILIATE: "همکاری فروش",
-  CLIPPING: "کلیپینگ",
 };
 
 function typeTone(status: string): string {
   switch (status) {
-    case "CPA":
-      return "border-primary/25 bg-primary/10 text-primary-soft";
-    case "CPC":
-      return "border-info/25 bg-info/10 text-info";
     case "CPM":
       return "border-warn/25 bg-warn/10 text-warn";
-    case "AFFILIATE":
-      return "border-line bg-hover text-muted";
     default:
       return "border-line bg-hover text-muted";
   }
@@ -100,11 +90,8 @@ export default async function BusinessDashboardPage({
       status: true,
       budget: true,
       spentAmount: true,
-      rewardPerClick: true,
-      rewardPerConversion: true,
-      rewardPerThousand: true,
-      commissionPercent: true,
-      clickRewardPerGroup: true,
+      cpm: true,
+      verifiedImpressions: true,
       createdAt: true,
       _count: { select: { applications: true } },
     },
@@ -373,7 +360,7 @@ export default async function BusinessDashboardPage({
             label="میانگین هزینه / تبدیل"
             value={avgCpa > 0 ? formatRials(avgCpa) : "—"}
             delta={null}
-            deltaLabel="CPA میانگین"
+            deltaLabel="میانگین هزینه"
             icon={<IconCoins className="h-4 w-4" />}
           />
         </div>
@@ -497,22 +484,9 @@ export default async function BusinessDashboardPage({
                             {typeLabels[campaign.type] ?? campaign.type}
                           </span>
                           <span>{formatNumber(campaign._count.applications)} درخواست</span>
-                          {(campaign.type === "CPC" || campaign.type === "CPA") &&
-                            campaign.rewardPerClick && (
-                              <span>
-                                {formatRials(toNumber(campaign.rewardPerClick))} /{" "}
-                                {formatNumber(toNumber(campaign.clickRewardPerGroup ?? 1))} کلیک
-                              </span>
-                            )}
-                          {(campaign.type === "CPM" || campaign.type === "CLIPPING") &&
-                            campaign.rewardPerThousand && (
-                              <span>{formatRials(toNumber(campaign.rewardPerThousand))} / هزار نمایش</span>
-                            )}
-                          {campaign.type === "AFFILIATE" && (
+                          {campaign.cpm && (
                             <span>
-                              {campaign.commissionPercent
-                                ? `${formatNumber(toNumber(campaign.commissionPercent))}٪ کمیسیون / فروش`
-                                : `${formatRials(toNumber(campaign.rewardPerConversion ?? 0))} کمیسیون / فروش`}
+                              {formatRials(toNumber(campaign.cpm))} / هزار نمایش تأییدشده
                             </span>
                           )}
                         </div>

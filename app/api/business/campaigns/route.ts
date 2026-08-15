@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";
-import { Prisma, CampaignType, CampaignAccessType } from "@/app/generated/prisma/client";
+import { Prisma, CampaignAccessType } from "@/app/generated/prisma/client";
 import { getBusinessWallet } from "@/lib/wallet";
+import { parseCpm, parsePositiveBudget } from "@/lib/finance/cpm";
 
-const VALID_TYPES = new Set<string>(Object.values(CampaignType));
 const VALID_ACCESS_TYPES = new Set<string>(Object.values(CampaignAccessType));
 
 function isValidDestinationUrl(value: string): boolean {
@@ -46,12 +46,7 @@ export async function POST(request: Request) {
       description,
       type,
       budget,
-      rewardPerClick,
-      rewardPerConversion,
-      rewardPerThousand,
-      commissionPercent,
-      clickRewardPerGroup,
-      conversionGoal,
+      cpm,
       destinationUrl,
       accessType,
     } = body;
@@ -60,19 +55,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "نام کمپین الزامی است." }, { status: 400 });
     }
 
-    if (!VALID_TYPES.has(type)) {
-      return NextResponse.json({ error: "نوع کمپین نامعتبر است." }, { status: 400 });
+    // Behrio supports CPM exclusively. Reject any other pricing model.
+    if (type !== undefined && type !== null && type !== "CPM") {
+      return NextResponse.json(
+        { error: "فقط مدل قیمت‌گذاری CPM پشتیبانی می‌شود." },
+        { status: 400 }
+      );
     }
 
     const access = accessType && VALID_ACCESS_TYPES.has(accessType) ? accessType : "OPEN";
 
-    if (
-      budget === undefined ||
-      budget === null ||
-      Number.isNaN(Number(budget)) ||
-      Number(budget) <= 0
-    ) {
-      return NextResponse.json({ error: "بودجه کمپین باید بیشتر از صفر باشد." }, { status: 400 });
+    const budgetCheck = parsePositiveBudget(budget);
+    if (!budgetCheck.ok) {
+      return NextResponse.json({ error: budgetCheck.error }, { status: 400 });
+    }
+
+    const cpmCheck = parseCpm(cpm);
+    if (!cpmCheck.ok || !cpmCheck.value) {
+      return NextResponse.json({ error: cpmCheck.error }, { status: 400 });
     }
 
     if (typeof destinationUrl !== "string" || !isValidDestinationUrl(destinationUrl.trim())) {
@@ -82,89 +82,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const rewardClick =
-      rewardPerClick === undefined || rewardPerClick === null
-        ? null
-        : Number(rewardPerClick);
-
-    const rewardConversion =
-      rewardPerConversion === undefined || rewardPerConversion === null
-        ? null
-        : Number(rewardPerConversion);
-
-    const rewardThousand =
-      rewardPerThousand === undefined || rewardPerThousand === null
-        ? null
-        : Number(rewardPerThousand);
-
-    const percent =
-      commissionPercent === undefined || commissionPercent === null
-        ? null
-        : Number(commissionPercent);
-
-    const groupSize =
-      clickRewardPerGroup === undefined || clickRewardPerGroup === null
-        ? 1
-        : Number(clickRewardPerGroup);
-
-    if ((rewardClick !== null && (!Number.isFinite(rewardClick) || rewardClick < 0)) ||
-        (rewardConversion !== null && (!Number.isFinite(rewardConversion) || rewardConversion < 0)) ||
-        (rewardThousand !== null && (!Number.isFinite(rewardThousand) || rewardThousand < 0))) {
-      return NextResponse.json(
-        { error: "پاداش کمپین نامعتبر است." },
-        { status: 400 }
-      );
-    }
-
-    if (percent !== null && (!Number.isFinite(percent) || percent <= 0 || percent > 100)) {
-      return NextResponse.json(
-        { error: "درصد کمیسیون باید بین ۰ تا ۱۰۰ باشد." },
-        { status: 400 }
-      );
-    }
-
-    if (!Number.isInteger(groupSize) || groupSize < 1) {
-      return NextResponse.json(
-        { error: "تعداد کلیک در هر گروه باید عدد صحیح بزرگ‌تر از صفر باشد." },
-        { status: 400 }
-      );
-    }
-
-    let conversionGoalValue: number | null = null;
-    if (conversionGoal !== undefined && conversionGoal !== null && conversionGoal !== "") {
-      conversionGoalValue = Number(conversionGoal);
-      if (!Number.isInteger(conversionGoalValue) || conversionGoalValue < 1) {
-        return NextResponse.json(
-          { error: "هدف تعداد تبدیل باید عدد صحیح بزرگ‌تر از صفر باشد." },
-          { status: 400 }
-        );
-      }
-    }
-
-    const isClickBased = type === "CPC" || type === "CPA";
-
-    if (isClickBased && (rewardClick === null || rewardClick <= 0)) {
-      return NextResponse.json(
-        { error: "برای کمپین کلیک‌محور (CPC/CPA)، مبلغ پاداش به‌ازای گروه کلیک الزامی است." },
-        { status: 400 }
-      );
-    }
-
-    if (type === "CPM" || type === "CLIPPING") {
-      if (rewardThousand === null || rewardThousand <= 0) {
-        return NextResponse.json(
-          { error: "برای کمپین نمایشی (CPM/کلیپینگ)، پاداش به‌ازای هر ۱۰۰۰ نمایش الزامی است." },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (type === "AFFILIATE" && percent === null) {
-      return NextResponse.json(
-        { error: "برای کمپین وابسته (Affiliate)، درصد کمیسیون الزامی است." },
-        { status: 400 }
-      );
-    }
+    const budgetValue = budgetCheck.value!;
+    const cpmValue = cpmCheck.value!;
 
     const businessProfileId = fullUser.businessProfile.id;
 
@@ -176,7 +95,7 @@ export async function POST(request: Request) {
 
       const wallet = await getBusinessWallet(tx, user.id);
 
-      if (new Prisma.Decimal(String(budget)).gt(wallet.available)) {
+      if (budgetValue.gt(wallet.available)) {
         return {
           error: "INSUFFICIENT_BALANCE",
           wallet: {
@@ -194,16 +113,12 @@ export async function POST(request: Request) {
             typeof description === "string" && description.trim()
               ? description.trim()
               : null,
-          type: type as CampaignType,
+          type: "CPM",
           accessType: access as CampaignAccessType,
-          budget: Number(budget),
-          reservedAmount: Number(budget),
-          rewardPerClick: rewardClick,
-          rewardPerConversion: rewardConversion,
-          rewardPerThousand: rewardThousand,
-          commissionPercent: percent,
-          clickRewardPerGroup: groupSize,
-          conversionGoal: conversionGoalValue,
+          budget: budgetValue,
+          reservedAmount: budgetValue,
+          cpm: cpmValue,
+          verifiedImpressions: 0,
           destinationUrl: destinationUrl.trim(),
           status: "DRAFT",
           currency: "IRR",

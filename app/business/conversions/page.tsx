@@ -56,8 +56,6 @@ export default async function BusinessConversionsPage() {
         select: {
           name: true,
           type: true,
-          rewardPerConversion: true,
-          commissionPercent: true,
         },
       },
       trackingLink: {
@@ -86,9 +84,11 @@ export default async function BusinessConversionsPage() {
         <div>
           <h1 className="text-2xl font-semibold text-fg">تبدیل‌ها</h1>
           <p className="mt-1 text-sm text-muted">
+            کمپین‌ها بر اساس نمایش (CPM) پرداخت می‌شوند؛ تبدیل فروش درآمدی برای
+            خالق ایجاد نمی‌کند و فقط به‌عنوان سابقه ثبت می‌شود.
             {pending > 0
-              ? `${pending} تبدیل در انتظار بررسی. با تأیید، دستمزد به خالق پرداخت می‌شود.`
-              : "تبدیلی در انتظار بررسی نیست."}
+              ? ` ${pending} تبدیل در انتظار بررسی است.`
+              : ""}
           </p>
         </div>
 
@@ -104,14 +104,6 @@ export default async function BusinessConversionsPage() {
           {conversions.map((conversion) => {
             const amount = toNumber(conversion.amount ?? 0);
             const cmp = conversion.campaign;
-            const reward =
-              cmp.type === "AFFILIATE" && cmp.commissionPercent
-                ? amount * toNumber(cmp.commissionPercent) / 100
-                : toNumber(cmp.rewardPerConversion ?? 0);
-            const rewardText =
-              conversion.status === "PENDING" && reward > 0
-                ? reward
-                : null;
 
             return (
               <div
@@ -156,11 +148,6 @@ export default async function BusinessConversionsPage() {
                     <p className="mt-1 text-sm text-muted">
                       مبلغ فروش:{" "}
                       <span className="font-semibold">{amount.toLocaleString("fa-IR")} ریال</span>
-                      {rewardText !== null && rewardText > 0 && (
-                        <span className="ms-2 font-semibold text-emerald-700">
-                          دستمزد خالق: {rewardText.toLocaleString("fa-IR")} ریال
-                        </span>
-                      )}
                     </p>
                     <p className="mt-1 text-xs text-subtle">
                       {new Intl.DateTimeFormat("fa-IR", {

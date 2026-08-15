@@ -5,10 +5,8 @@ import { useRouter } from "next/navigation";
 
 export default function CampaignReviewActions({
   campaignId,
-  canApprove,
 }: {
   campaignId: string;
-  canApprove: boolean;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState<"APPROVE" | "CANCEL" | null>(null);
@@ -47,8 +45,7 @@ export default function CampaignReviewActions({
       <div className="flex gap-2">
         <button
           onClick={() => review("APPROVE")}
-          disabled={loading !== null || !canApprove}
-          title={canApprove ? undefined : "ابتدا باید یکپارچه‌سازی تأیید شود."}
+          disabled={loading !== null}
           className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-bg transition-colors hover:bg-primary-bright disabled:opacity-50"
         >
           {loading === "APPROVE" ? "..." : "تأیید و فعال‌سازی"}

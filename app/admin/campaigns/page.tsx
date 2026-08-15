@@ -27,24 +27,6 @@ const statusLabel: Record<string, string> = {
   CANCELLED: "لغو شده",
 };
 
-const integrationLabel: Record<string, string> = {
-  NOT_CONFIGURED: "یکپارچه‌سازی: تنظیم نشده",
-  CONFIGURED: "یکپارچه‌سازی: تنظیم شده",
-  VERIFICATION_PENDING: "یکپارچه‌سازی: در انتظار تأیید",
-  VERIFIED: "یکپارچه‌سازی: تأیید شده",
-  FAILED: "یکپارچه‌سازی: ناموفق",
-  DISABLED: "یکپارچه‌سازی: غیرفعال",
-};
-
-const integrationTone: Record<string, "default" | "violet" | "green" | "amber" | "blue" | "red"> = {
-  NOT_CONFIGURED: "default",
-  CONFIGURED: "blue",
-  VERIFICATION_PENDING: "amber",
-  VERIFIED: "green",
-  FAILED: "red",
-  DISABLED: "red",
-};
-
 const statusTone: Record<string, "default" | "violet" | "green" | "amber" | "blue" | "red"> = {
   DRAFT: "default",
   PENDING_REVIEW: "amber",
@@ -67,7 +49,6 @@ export default async function AdminCampaignsPage() {
   const campaigns = await prisma.campaign.findMany({
     include: {
       business: { select: { companyName: true } },
-      integration: true,
       _count: {
         select: { applications: true, trackingLinks: true },
       },
@@ -116,9 +97,6 @@ export default async function AdminCampaignsPage() {
                       <Badge tone={statusTone[campaign.status] ?? "default"}>
                         {statusLabel[campaign.status] ?? campaign.status}
                       </Badge>
-                      <Badge tone={integrationTone[campaign.integration?.status ?? "NOT_CONFIGURED"] ?? "default"}>
-                        {integrationLabel[campaign.integration?.status ?? "NOT_CONFIGURED"] ?? campaign.integration?.status}
-                      </Badge>
                       <Badge tone="default">{campaign.type}</Badge>
                     </div>
                     <p className="mt-1 text-sm text-muted">
@@ -142,14 +120,14 @@ export default async function AdminCampaignsPage() {
                       <span>
                         {campaign._count.trackingLinks} لینک پیگیری
                       </span>
-                      {campaign.rewardPerClick && (
+                      {campaign.cpm && (
                         <span>
-                          {formatNumber(Number(campaign.rewardPerClick))} تومان / کلیک
+                          {formatNumber(Number(campaign.cpm))} تومان / هزار نمایش
                         </span>
                       )}
-                      {campaign.rewardPerConversion && (
+                      {campaign.verifiedImpressions > 0 && (
                         <span>
-                          {formatNumber(Number(campaign.rewardPerConversion))} تومان / تبدیل
+                          {formatNumber(campaign.verifiedImpressions)} نمایش تأییدشده
                         </span>
                       )}
                     </div>
@@ -170,18 +148,7 @@ export default async function AdminCampaignsPage() {
 
                   {campaign.status === "PENDING_REVIEW" && (
                     <div className="shrink-0">
-                      {!campaign.integration ||
-                      campaign.integration.status !== "VERIFIED" ? (
-                        <p className="max-w-xs rounded-xl border border-warn/30 bg-warn/10 p-3 text-xs leading-5 text-warn">
-                          این کمپین تا وقتی یکپارچه‌سازی (Conversion API) تأیید نشود قابل
-                          فعال‌سازی نیست.
-                        </p>
-                      ) : (
-                        <CampaignReviewActions
-                          campaignId={campaign.id}
-                          canApprove={true}
-                        />
-                      )}
+                      <CampaignReviewActions campaignId={campaign.id} />
                     </div>
                   )}
                 </div>

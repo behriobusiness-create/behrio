@@ -59,7 +59,6 @@ const campaign = await prisma.campaign.findUnique({
   select: {
     id: true,
     status: true,
-    integration: true,
   },
 });
 
@@ -75,16 +74,6 @@ if (campaign.status !== "PENDING_REVIEW") {
     {
       error:
         "فقط کمپین‌های در انتظار بررسی می‌توانند بررسی شوند.",
-    },
-    { status: 400 },
-  );
-}
-
-if (requestedStatus === "ACTIVE" && campaign.integration?.status !== "VERIFIED") {
-  return NextResponse.json(
-    {
-      error:
-        "یکپارچه‌سازی (Conversion API) این کمپین هنوز تأیید نشده است؛ نمی‌توان آن را فعال کرد.",
     },
     { status: 400 },
   );

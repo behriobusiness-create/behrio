@@ -15,11 +15,7 @@ function toView(c: {
   accessType: string;
   budget: unknown;
   destinationUrl: string;
-  rewardPerClick: unknown;
-  rewardPerConversion: unknown;
-  rewardPerThousand: unknown;
-  commissionPercent: unknown;
-  clickRewardPerGroup: unknown;
+  cpm: unknown;
   business: { companyName: string };
   applications: { status: string }[];
 }): CampaignView {
@@ -37,15 +33,7 @@ function toView(c: {
     accessType: c.accessType,
     budget: toNumber(c.budget),
     destinationUrl: c.destinationUrl,
-    rewardPerClick: c.rewardPerClick != null ? toNumber(c.rewardPerClick) : null,
-    rewardPerConversion:
-      c.rewardPerConversion != null ? toNumber(c.rewardPerConversion) : null,
-    rewardPerThousand:
-      c.rewardPerThousand != null ? toNumber(c.rewardPerThousand) : null,
-    commissionPercent:
-      c.commissionPercent != null ? toNumber(c.commissionPercent) : null,
-    clickRewardPerGroup:
-      c.clickRewardPerGroup != null ? toNumber(c.clickRewardPerGroup) : null,
+    cpm: c.cpm != null ? toNumber(c.cpm) : null,
     business: c.business.companyName,
     applicationStatus,
   };
@@ -73,6 +61,7 @@ export default async function CreatorMarketplacePage() {
   const campaigns = await prisma.campaign.findMany({
     where: {
       status: "ACTIVE",
+      type: "CPM",
       AND: [
         {
           OR: [{ startAt: null }, { startAt: { lte: now } }],
@@ -91,11 +80,7 @@ export default async function CreatorMarketplacePage() {
       budget: true,
       spentAmount: true,
       destinationUrl: true,
-      rewardPerClick: true,
-      rewardPerConversion: true,
-      rewardPerThousand: true,
-      commissionPercent: true,
-      clickRewardPerGroup: true,
+      cpm: true,
       business: { select: { companyName: true } },
       applications: {
         where: { creatorId },

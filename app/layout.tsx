@@ -15,11 +15,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Behrio | بساز، فاند کن، دیده شو",
+    default: "Behrio | کمپین‌های کریتوری با پرداخت بر اساس بازدید واقعی",
     template: "%s | Behrio",
   },
   description:
-    "Behrio پلتفرم همکاری برندها و تولیدکنندگان محتوا است — کمپین بسازید، بودجه تأمین کنید و دیده شوید.",
+    "Behrio پلتفرم پرفورمنس مارکتینگ برای کمپین‌های CPM است — کمپین بسازید، با کریتورها همکاری کنید و بر اساس بازدید تأییدشده بپردازید و تسویه کنید.",
 };
 
 export default function RootLayout({

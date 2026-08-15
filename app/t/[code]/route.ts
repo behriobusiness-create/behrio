@@ -37,13 +37,9 @@ export async function GET(
             select: {
               id: true,
               status: true,
-              type: true,
               destinationUrl: true,
               startAt: true,
               endAt: true,
-              budget: true,
-              spentAmount: true,
-              rewardPerClick: true,
             },
           },
         },
@@ -179,11 +175,6 @@ export async function GET(
         select: {
           id: true,
           status: true,
-          type: true,
-          budget: true,
-          spentAmount: true,
-          rewardPerClick: true,
-          clickRewardPerGroup: true,
         },
       });
 
@@ -209,29 +200,6 @@ export async function GET(
         }
       }
 
-      const isCpc =
-        campaign.type === "CPC" ||
-        campaign.type === "CPA";
-      const groupSize =
-        isCpc && campaign.clickRewardPerGroup
-          ? campaign.clickRewardPerGroup
-          : 1;
-      const reward =
-        campaign.rewardPerClick &&
-        campaign.rewardPerClick.gt(0)
-          ? campaign.rewardPerClick
-          : null;
-
-      if (isCpc && reward) {
-        const remaining = campaign.budget.sub(
-          campaign.spentAmount
-        );
-
-        if (reward.gt(remaining)) {
-          return;
-        }
-      }
-
       const createdClick = await tx.click.create({
         data: {
           trackingLinkId:
@@ -247,92 +215,6 @@ export async function GET(
       });
 
       newClickId = createdClick.clickId;
-
-      if (isCpc && reward) {
-        const unpaid = await tx.click.count({
-          where: {
-            trackingLinkId: trackingLink.id,
-            creditedAt: null,
-          },
-        });
-
-        const batches = Math.floor(
-          unpaid / groupSize,
-        );
-
-        if (batches >= 1) {
-          const remaining =
-            campaign.budget.sub(
-              campaign.spentAmount,
-            );
-
-          if (reward.gt(remaining)) {
-            return;
-          }
-
-          const payableBatches = Math.min(
-            batches,
-            Number(remaining.div(reward).floor()),
-          );
-
-          if (payableBatches >= 1) {
-            const now = new Date();
-
-            for (let b = 0; b < payableBatches; b++) {
-              const conversion =
-                await tx.conversion.create({
-                  data: {
-                    trackingLinkId: trackingLink.id,
-                    campaignId: campaign.id,
-                    amount: reward,
-                    status: "APPROVED",
-                    approvedAt: now,
-                  },
-                });
-
-              await tx.ledgerEntry.create({
-                data: {
-                  userId: trackingLink.creator.userId,
-                  campaignId: campaign.id,
-                  conversionId: conversion.id,
-                  type: "CREATOR_EARNING",
-                  status: "AVAILABLE",
-                  amount: reward,
-                  currency: "IRR",
-                  description: "CPC click batch earning",
-                },
-              });
-            }
-
-            await tx.campaign.update({
-              where: { id: campaign.id },
-              data: {
-                spentAmount: { increment: reward.mul(payableBatches) },
-              },
-            });
-
-            const clicksToCredit =
-              await tx.click.findMany({
-                where: {
-                  trackingLinkId: trackingLink.id,
-                  creditedAt: null,
-                },
-                orderBy: { clickedAt: "asc" },
-                take: payableBatches * groupSize,
-                select: { id: true },
-              });
-
-            if (clicksToCredit.length > 0) {
-              await tx.click.updateMany({
-                where: {
-                  id: { in: clicksToCredit.map((c) => c.id) },
-                },
-                data: { creditedAt: now },
-              });
-            }
-          }
-        }
-      }
     });
 
     let destination = trackingLink.campaign.destinationUrl;

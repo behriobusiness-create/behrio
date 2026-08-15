@@ -13,32 +13,10 @@ export default function CreateCampaignForm() {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [type, setType] = useState("CPC");
   const [budget, setBudget] = useState("");
-  const [rewardPerClick, setRewardPerClick] = useState("");
-  const [rewardPerConversion, setRewardPerConversion] = useState("");
-  const [rewardPerThousand, setRewardPerThousand] = useState("");
-  const [commissionPercent, setCommissionPercent] = useState("");
-  const [clickGroupSize, setClickGroupSize] = useState("1");
-  const [conversionGoal, setConversionGoal] = useState("");
+  const [cpm, setCpm] = useState("");
   const [destinationUrl, setDestinationUrl] = useState("");
   const [accessType, setAccessType] = useState("OPEN");
-
-  const typeExplanations: Record<string, string> = {
-    CPC: "پرداخت به‌ازای کلیک: به‌ازای هر {Y} کلیک، مبلغ {X} تومان به خالق محتوا پرداخت می‌شود. برای جذب بازدید مناسب است.",
-    CPA: "پرداخت به‌ازای کلیک (مانند CPC): به‌ازای هر {Y} کلیک، مبلغ {X} تومان پرداخت می‌شود.",
-    CPM: "پرداخت به‌ازای نمایش: به‌ازای هر ۱۰۰۰ نمایش (ویو) محتوا، پاداش مشخصی پرداخت می‌شود. مناسب برندینگ.",
-    AFFILIATE: "همکاری در فروش: خالق محتوا به‌ازای هر فروشی که از لینک او انجام شود، درصدی از مبلغ فروش را کمیسیون دریافت می‌کند.",
-    CLIPPING: "کلیپ: خالقان محتوا کلیپ برند شما را منتشر می‌کنند و به‌ازای هر ۱۰۰۰ نمایش (ویو) پاداش می‌گیرند.",
-  };
-
-  const typeRewardHint: Record<string, { click?: boolean; thousand?: boolean; percent?: boolean }> = {
-    CPC: { click: true },
-    CPA: { click: true },
-    CPM: { thousand: true },
-    AFFILIATE: { percent: true },
-    CLIPPING: { thousand: true },
-  };
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -48,23 +26,12 @@ export default function CreateCampaignForm() {
     const payload: Record<string, unknown> = {
       name,
       description,
-      type,
+      type: "CPM",
       accessType,
-      budget: Number(budget),
+      budget: budget.trim(),
+      cpm: cpm.trim(),
       destinationUrl,
     };
-
-    if (type === "CPC" || type === "CPA") {
-      payload.rewardPerClick = Number(rewardPerClick);
-      payload.clickRewardPerGroup = Number(clickGroupSize) || 1;
-    }
-    if (type === "CPM" || type === "CLIPPING") {
-      payload.rewardPerThousand = Number(rewardPerThousand);
-    }
-    if (rewardPerConversion) payload.rewardPerConversion = Number(rewardPerConversion);
-    if (type === "AFFILIATE" && commissionPercent)
-      payload.commissionPercent = Number(commissionPercent);
-    if (conversionGoal) payload.conversionGoal = Number(conversionGoal);
 
     setLoading(true);
 
@@ -88,18 +55,12 @@ export default function CreateCampaignForm() {
         return;
       }
 
-      setSuccess("کمپین ایجاد شد و در انتظار تأیید مدیر است.");
+      setSuccess("کمپین CPM ایجاد شد.");
       setName("");
       setDescription("");
       setBudget("");
-      setRewardPerClick("");
-      setRewardPerConversion("");
-      setRewardPerThousand("");
-      setCommissionPercent("");
-      setClickGroupSize("1");
-      setConversionGoal("");
+      setCpm("");
       setDestinationUrl("");
-      setType("CPC");
       setAccessType("OPEN");
       setOpen(false);
       router.refresh();
@@ -135,40 +96,21 @@ export default function CreateCampaignForm() {
             </div>
             <div>
               <label className={labelClass}>نوع کمپین</label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
+              <input
+                value="CPM (پرداخت به‌ازای نمایش)"
+                disabled
+                readOnly
                 className={inputClass}
-              >
-                <option value="CPC">CPC (پرداخت به ازای کلیک)</option>
-                <option value="CPA">CPA (پرداخت گروهی به ازای کلیک)</option>
-                <option value="CPM">CPM (پرداخت به ازای نمایش)</option>
-                <option value="AFFILIATE">وابسته (Affiliate)</option>
-                <option value="CLIPPING">کلیپ (Clipping)</option>
-              </select>
+              />
               <div className="mt-2 rounded-lg border border-info/25 bg-info/10 px-3 py-2.5">
                 <p className="text-xs font-semibold text-info">
-                  {type} چطور کار می‌کند؟
+                  CPM چیست؟
                 </p>
                 <p className="mt-1 text-xs leading-5 text-info/90">
-                  {typeExplanations[type]}
+                  CPM = قیمت به‌ازای هر ۱٬۰۰۰ نمایش تأییدشده (ویو). درآمد خالق از
+                  نمایش‌های تأییدشده محاسبه می‌شود.
                 </p>
               </div>
-              {typeRewardHint[type]?.click && (
-                <p className="mt-1.5 text-xs text-subtle">
-                  مبلغ پاداش (X) و تعداد کلیک هر گروه (Y) را تعیین کنید.
-                </p>
-              )}
-              {typeRewardHint[type]?.thousand && (
-                <p className="mt-1.5 text-xs text-subtle">
-                  پاداش به‌ازای هر ۱۰۰۰ نمایش (ویو) را حتماً تعیین کنید.
-                </p>
-              )}
-              {typeRewardHint[type]?.percent && (
-                <p className="mt-1.5 text-xs text-subtle">
-                  درصد کمیسیون از مبلغ هر فروش را تعیین کنید.
-                </p>
-              )}
             </div>
             <div>
               <label className={labelClass}>بودجه (تومان)</label>
@@ -176,11 +118,26 @@ export default function CreateCampaignForm() {
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 required
-                inputMode="numeric"
+                inputMode="decimal"
                 placeholder="مثلاً 5000000"
                 className={inputClass}
                 dir="ltr"
               />
+            </div>
+            <div>
+              <label className={labelClass}>نرخ CPM (تومان به‌ازای ۱۰۰۰ نمایش)</label>
+              <input
+                value={cpm}
+                onChange={(e) => setCpm(e.target.value)}
+                required
+                inputMode="decimal"
+                placeholder="مثلاً 200000"
+                className={inputClass}
+                dir="ltr"
+              />
+              <p className="mt-1.5 text-xs text-subtle">
+                مثال: ۱۲۵٬۰۰۰ نمایش تأییدشده × (۲۰۰٬۰۰۰ / ۱۰۰۰) = ۲۵٬۰۰۰٬۰۰۰ تومان
+              </p>
             </div>
             <div>
               <label className={labelClass}>نوع دسترسی</label>
@@ -194,94 +151,17 @@ export default function CreateCampaignForm() {
                 <option value="HYBRID">ترکیبی</option>
               </select>
             </div>
-            {(type === "CPC" || type === "CPA") && (
-              <>
-                <div>
-                  <label className={labelClass}>مبلغ پاداش هر گروه (X) تومان</label>
-                  <input
-                    value={rewardPerClick}
-                    onChange={(e) => setRewardPerClick(e.target.value)}
-                    required
-                    inputMode="numeric"
-                    placeholder="مثلاً ۵۰۰۰۰"
-                    className={inputClass}
-                    dir="ltr"
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>تعداد کلیک هر گروه (Y)</label>
-                  <input
-                    value={clickGroupSize}
-                    onChange={(e) => setClickGroupSize(e.target.value)}
-                    required
-                    inputMode="numeric"
-                    placeholder="مثلاً ۱۰۰"
-                    className={inputClass}
-                    dir="ltr"
-                  />
-                  <p className="mt-1.5 text-xs text-subtle">
-                    هر {clickGroupSize || "Y"} کلیک جمع شود، {rewardPerClick || "X"} تومان پرداخت می‌شود.
-                  </p>
-                </div>
-              </>
-            )}
-            {(type === "CPM" || type === "CLIPPING") && (
-              <div>
-                <label className={labelClass}>پاداش به‌ازای هر ۱۰۰۰ نمایش/ویو (تومان)</label>
-                <input
-                  value={rewardPerThousand}
-                  onChange={(e) => setRewardPerThousand(e.target.value)}
-                  required
-                  inputMode="numeric"
-                  placeholder="مثلاً ۲۰۰۰۰۰"
-                  className={inputClass}
-                  dir="ltr"
-                />
-              </div>
-            )}
-            {type === "AFFILIATE" && (
-              <div>
-                <label className={labelClass}>درصد کمیسیون از فروش (٪)</label>
-                <input
-                  value={commissionPercent}
-                  onChange={(e) => setCommissionPercent(e.target.value)}
-                  required
-                  inputMode="numeric"
-                  placeholder="مثلاً ۱۵"
-                  className={inputClass}
-                  dir="ltr"
-                />
-                <p className="mt-1.5 text-xs text-subtle">
-                  خالق به‌ازای هر فروش، {commissionPercent || "X"}٪ از مبلغ فروش را کمیسیون می‌گیرد.
-                </p>
-              </div>
-            )}
             <div>
-              <label className={labelClass}>هدف تعداد تبدیل (اختیاری)</label>
+              <label className={labelClass}>آدرس مقصد</label>
               <input
-                value={conversionGoal}
-                onChange={(e) => setConversionGoal(e.target.value)}
-                inputMode="numeric"
-                placeholder="مثلاً ۵۰"
+                value={destinationUrl}
+                onChange={(e) => setDestinationUrl(e.target.value)}
+                required
+                placeholder="https://example.com"
                 className={inputClass}
                 dir="ltr"
               />
-              <p className="mt-1.5 text-xs text-subtle">
-                با رسیدن به این تعداد تبدیل، کمپین به‌صورت خودکار تکمیل و تسویه می‌شود.
-              </p>
             </div>
-          </div>
-
-          <div>
-            <label className={labelClass}>آدرس مقصد</label>
-            <input
-              value={destinationUrl}
-              onChange={(e) => setDestinationUrl(e.target.value)}
-              required
-              placeholder="https://example.com"
-              className={inputClass}
-              dir="ltr"
-            />
           </div>
 
           <div>

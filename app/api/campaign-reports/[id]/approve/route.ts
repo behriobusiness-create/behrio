@@ -2,6 +2,11 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { settleCampaign } from "@/lib/finance/commission";
+import {
+  calculateCpmEarnings,
+  calculateCpmGroups,
+  validateImpressions,
+} from "@/lib/finance/cpm";
 
 export async function POST(
   request: Request,
@@ -29,7 +34,7 @@ export async function POST(
             type: true,
             budget: true,
             spentAmount: true,
-            rewardPerThousand: true,
+            cpm: true,
           },
         },
         creator: { select: { userId: true } },
@@ -69,32 +74,61 @@ export async function POST(
 
     const cmp = report.campaign;
 
-    if (cmp.type !== "CPM" && cmp.type !== "CLIPPING") {
+    if (cmp.type !== "CPM") {
       return NextResponse.json(
         { error: "این کمپین بر اساس نمایش پرداخت نمی‌شود." },
         { status: 400 }
       );
     }
 
-    const rewardPerThousand = cmp.rewardPerThousand;
+    const cpm = cmp.cpm;
 
-    if (!rewardPerThousand || rewardPerThousand.lte(0)) {
+    if (!cpm || cpm.lte(0)) {
       return NextResponse.json(
-        { error: "نرخ هر هزار نمایش برای این کمپین تنظیم نشده است." },
+        { error: "نرخ CPM برای این کمپین تنظیم نشده است." },
         { status: 400 }
       );
     }
 
-    const groups = Math.floor(report.claimedImpressions / 1000);
+    // Verified impressions come from the approving party (admin/business) after
+    // reviewing evidence. When not supplied, it defaults to the claimed count —
+    // this keeps the payout basis explicit and the schema ready for an
+    // independent verification feed (pixel / analytics API) later.
+    const body = await request.json().catch(() => ({}));
+    const rawVerified =
+      body.verifiedImpressions === undefined ||
+      body.verifiedImpressions === null ||
+      body.verifiedImpressions === ""
+        ? report.claimedImpressions
+        : body.verifiedImpressions;
+
+    const verifiedImpressions = validateImpressions(rawVerified);
+
+    if (verifiedImpressions === null) {
+      return NextResponse.json(
+        { error: "تعداد نمایش تأییدشده باید عدد صحیح و نامنفی باشد." },
+        { status: 400 }
+      );
+    }
+
+    const groups = calculateCpmGroups(verifiedImpressions);
 
     if (groups < 1) {
       return NextResponse.json(
-        { error: "حداقل ۱۰۰۰ نمایش برای پرداخت الزامی است." },
+        { error: "حداقل ۱۰۰۰ نمایش تأییدشده برای پرداخت الزامی است." },
         { status: 400 }
       );
     }
 
-    const totalReward = rewardPerThousand.mul(groups);
+    const totalReward = calculateCpmEarnings(verifiedImpressions, cpm);
+
+    if (totalReward.lte(0)) {
+      return NextResponse.json(
+        { error: "پاداش محاسبه‌شده معتبر نیست." },
+        { status: 400 }
+      );
+    }
+
     const creatorUserId = report.creator.userId;
 
     const result = await prisma.$transaction(async (tx) => {
@@ -158,41 +192,39 @@ export async function POST(
         where: { id },
         data: {
           status: "APPROVED",
+          verifiedImpressions,
           reviewedAt: now,
         },
       });
 
-      const createdConversions = [];
-      for (let g = 0; g < groups; g++) {
-        const conversion = await tx.conversion.create({
-          data: {
-            trackingLinkId: trackingLink.id,
-            campaignId: report.campaignId,
-            amount: rewardPerThousand,
-            status: "APPROVED",
-            approvedAt: now,
-          },
-        });
-        createdConversions.push(conversion);
+      const conversion = await tx.conversion.create({
+        data: {
+          trackingLinkId: trackingLink.id,
+          campaignId: report.campaignId,
+          amount: totalReward,
+          status: "APPROVED",
+          approvedAt: now,
+        },
+      });
 
-        await tx.ledgerEntry.create({
-          data: {
-            userId: creatorUserId,
-            campaignId: report.campaignId,
-            conversionId: conversion.id,
-            type: "CREATOR_EARNING",
-            status: "AVAILABLE",
-            amount: rewardPerThousand,
-            currency: "IRR",
-            description: "Impressions report reward (per 1000 views)",
-          },
-        });
-      }
+      const ledger = await tx.ledgerEntry.create({
+        data: {
+          userId: creatorUserId,
+          campaignId: report.campaignId,
+          conversionId: conversion.id,
+          type: "CREATOR_EARNING",
+          status: "AVAILABLE",
+          amount: totalReward,
+          currency: "IRR",
+          description: "CPM earnings (verified impressions)",
+        },
+      });
 
       const updatedCampaign = await tx.campaign.update({
         where: { id: report.campaignId },
         data: {
           spentAmount: { increment: totalReward },
+          verifiedImpressions: { increment: verifiedImpressions },
         },
       });
 
@@ -207,10 +239,10 @@ export async function POST(
 
         await settleCampaign(tx, report.campaignId);
 
-        return { conversions: createdConversions, campaign: completed };
+        return { conversion, ledger, campaign: completed };
       }
 
-      return { conversions: createdConversions, campaign: updatedCampaign };
+      return { conversion, ledger, campaign: updatedCampaign };
     });
 
     if (result === null) {
@@ -254,7 +286,9 @@ export async function POST(
 
     return NextResponse.json({
       ok: true,
+      verifiedImpressions,
       groups,
+      cpm: Number(cpm.toFixed(2)),
       totalReward: Number(totalReward.toFixed(2)),
       ...result,
     });

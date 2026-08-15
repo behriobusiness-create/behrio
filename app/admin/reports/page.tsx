@@ -41,7 +41,7 @@ export default async function AdminReportsPage() {
           select: {
             name: true,
             type: true,
-            rewardPerThousand: true,
+            cpm: true,
             business: { select: { companyName: true } },
           },
         },
@@ -87,9 +87,9 @@ export default async function AdminReportsPage() {
             <ul className="divide-y divide-line/60">
               {reports.map((report) => {
                 const groups = Math.floor(report.claimedImpressions / 1000);
-                const rewardPerThousand = report.campaign.rewardPerThousand;
-                const expectedReward = rewardPerThousand
-                  ? toNumber(rewardPerThousand) * Math.max(groups, 0)
+                const cpm = report.campaign.cpm;
+                const expectedReward = cpm
+                  ? toNumber(cpm) * Math.max(groups, 0)
                   : null;
                 return (
                   <li key={report.id} className="px-5 py-4">
@@ -134,8 +134,13 @@ export default async function AdminReportsPage() {
                             کمپین: {report.campaign.name}
                           </p>
                           <p className="mt-2 text-[11px] text-subtle">
-                            {formatNumber(report.claimedImpressions)} ویو (
+                            {formatNumber(report.claimedImpressions)} ویو ادعاشده (
                             {formatNumber(groups)} گروه ۱۰۰۰تایی)
+                            {report.verifiedImpressions != null && (
+                              <span className="ms-2">
+                                · {formatNumber(report.verifiedImpressions)} ویو تأییدشده
+                              </span>
+                            )}
                             {expectedReward !== null && expectedReward > 0 && (
                               <span className="ms-2 font-semibold text-primary-soft">
                                 {formatRials(expectedReward)}

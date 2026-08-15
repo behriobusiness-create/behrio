@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (campaign.type !== "CPM" && campaign.type !== "CLIPPING") {
+    if (campaign.type !== "CPM") {
       return NextResponse.json(
         { error: "برای این نوع کمپین گزارش نمایش ثبت نمی‌شود." },
         { status: 400 }
@@ -111,9 +111,9 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!campaign.rewardPerThousand || campaign.rewardPerThousand.lte(0)) {
+    if (!campaign.cpm || campaign.cpm.lte(0)) {
       return NextResponse.json(
-        { error: "نرخ هر هزار نمایش برای این کمپین تنظیم نشده است." },
+        { error: "نرخ CPM برای این کمپین تنظیم نشده است." },
         { status: 400 }
       );
     }

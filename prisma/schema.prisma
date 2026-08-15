@@ -114,8 +114,13 @@ model Campaign {
   reservedAmount      Decimal               @default(0) @db.Decimal(18, 2)
   spentAmount         Decimal               @default(0) @db.Decimal(18, 2)
   currency            String                @default("IRR")
+  // CPM rate = price per 1,000 verified impressions (the only supported pricing model)
+  cpm                 Decimal?              @db.Decimal(18, 2)
+  // Total verified impressions approved for payout across this campaign
+  verifiedImpressions Int                   @default(0)
+  // Deprecated legacy pricing fields, kept for historical data only.
+  // Behrio now supports CPM exclusively; these are never read or written by the app.
   rewardPerConversion Decimal?              @db.Decimal(18, 2)
-  rewardPerThousand   Decimal?              @db.Decimal(18, 2)
   rewardPerClick      Decimal?              @db.Decimal(18, 2)
   commissionPercent   Decimal?              @db.Decimal(5, 2)
   clickRewardPerGroup Int?                  @default(1)
@@ -163,6 +168,7 @@ model CampaignReport {
   creatorId          String
   screenshotUrl      String
   claimedImpressions Int
+  verifiedImpressions Int?
   status             ReportStatus     @default(PENDING)
   note               String?
   createdAt          DateTime         @default(now())
@@ -405,11 +411,11 @@ enum UserStatus {
 }
 
 enum CampaignType {
-  AFFILIATE
+  AFFILIATE // deprecated — not supported; kept for historical rows only
   CPM
-  CPA
-  CPC
-  CLIPPING
+  CPA // deprecated — not supported; kept for historical rows only
+  CPC // deprecated — not supported; kept for historical rows only
+  CLIPPING // deprecated — not supported; kept for historical rows only
 }
 
 enum CampaignAccessType {
