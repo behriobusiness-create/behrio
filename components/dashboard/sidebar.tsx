@@ -10,6 +10,7 @@ import { Logo } from "@/components/logo";
 export type SidebarUser = {
   name: string;
   subtitle?: string;
+  badge?: string;
 };
 
 export function SidebarContent({
@@ -88,6 +89,11 @@ export function SidebarContent({
             <p className="truncate text-sm font-medium text-fg">{user.name}</p>
             {user.subtitle && (
               <p className="truncate text-xs text-subtle">{user.subtitle}</p>
+            )}
+            {user.badge && (
+              <span className="mt-0.5 inline-flex items-center rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success">
+                {user.badge}
+              </span>
             )}
           </div>
           <IconChevronDown className="h-4 w-4 shrink-0 text-subtle" />

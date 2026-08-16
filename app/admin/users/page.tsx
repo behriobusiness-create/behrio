@@ -10,6 +10,7 @@ import {
   IconUsers,
 } from "@/components/icons";
 import UserStatusActions from "./user-status-actions";
+import CreatorVerificationActions from "./creator-verification-actions";
 
 const nav = [
   { label: "داشبورد", href: "/admin", icon: <IconDashboard className="h-5 w-5" /> },
@@ -42,6 +43,18 @@ const statusLabel: Record<string, string> = {
   DELETED: "حذف‌شده",
 };
 
+const verificationTone: Record<string, "green" | "red" | "amber" | "default"> = {
+  VERIFIED: "green",
+  REJECTED: "red",
+  UNVERIFIED: "amber",
+};
+
+const verificationLabel: Record<string, string> = {
+  VERIFIED: "تاییدشده",
+  REJECTED: "ردشده",
+  UNVERIFIED: "در انتظار تایید",
+};
+
 export default async function AdminUsersPage() {
   const user = await getCurrentUser();
 
@@ -58,7 +71,15 @@ export default async function AdminUsersPage() {
       status: true,
       emailVerified: true,
       createdAt: true,
-      creatorProfile: { select: { displayName: true } },
+      creatorProfile: {
+        select: {
+          id: true,
+          displayName: true,
+          instagramHandle: true,
+          instagramScreenshotUrl: true,
+          verificationStatus: true,
+        },
+      },
       businessProfile: { select: { companyName: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -112,13 +133,41 @@ export default async function AdminUsersPage() {
                         <Badge tone={statusTone[u.status] ?? "default"}>
                           {statusLabel[u.status] ?? u.status}
                         </Badge>
+                        {u.role === "CREATOR" && u.creatorProfile && (
+                          <Badge
+                            tone={
+                              verificationTone[
+                                u.creatorProfile.verificationStatus
+                              ] ?? "default"
+                            }
+                          >
+                            {verificationLabel[
+                              u.creatorProfile.verificationStatus
+                            ] ?? u.creatorProfile.verificationStatus}
+                          </Badge>
+                        )}
                       </div>
+                      {u.role === "CREATOR" && u.creatorProfile?.instagramHandle && (
+                        <p
+                          dir="ltr"
+                          className="truncate text-right text-xs text-subtle"
+                        >
+                          @{u.creatorProfile.instagramHandle}
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  <div className="shrink-0">
+                  <div className="shrink-0 space-y-2">
                     {u.role && u.role !== "ADMIN" && (
                       <UserStatusActions userId={u.id} status={u.status} />
+                    )}
+                    {u.role === "CREATOR" && u.creatorProfile && (
+                      <CreatorVerificationActions
+                        creatorId={u.creatorProfile.id}
+                        currentStatus={u.creatorProfile.verificationStatus}
+                        screenshotUrl={u.creatorProfile.instagramScreenshotUrl}
+                      />
                     )}
                   </div>
                 </div>

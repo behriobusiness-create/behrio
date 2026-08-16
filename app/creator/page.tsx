@@ -341,6 +341,12 @@ export default async function CreatorDashboardPage({
 
   const profile = fullUser.creatorProfile!;
   const name = profile.displayName || user.email || "کاربر";
+  const verifBadge =
+    profile.verificationStatus === "VERIFIED"
+      ? "تاییدشده"
+      : profile.verificationStatus === "UNVERIFIED"
+        ? "در انتظار تایید"
+        : undefined;
   const exportRows: (string | number)[][] = [
     ["کمپین", "کسب‌وکار", "وضعیت", "کلیک‌ها", "تبدیل‌ها", "درآمد", "نرخ تبدیل"],
     ...campaignRows.map((r) => [
@@ -363,6 +369,7 @@ export default async function CreatorDashboardPage({
         subtitle: profile.instagramHandle
           ? `@${profile.instagramHandle}`
           : user.email ?? undefined,
+        badge: verifBadge,
       }}
       title={`${greetingFor()}، ${name}`}
       subtitle="نمای کلی عملکرد و درآمد شما در Behrio."
