@@ -58,8 +58,8 @@ function SignupForm() {
 
     const isEmail = identifier.includes("@");
 
-    if (isEmail && password.length < 8) {
-      setError("برای ثبت‌نام با ایمیل، رمز عبور حداقل ۸ کاراکتری الزامی است.");
+    if (password && password.length < 8) {
+      setError("رمز عبور باید حداقل ۸ کاراکتر باشد.");
       return;
     }
 
@@ -233,7 +233,7 @@ function SignupForm() {
           </h1>
           <p className="mt-2 text-sm text-muted">
             {step === "identifier" &&
-              "شماره موبایل یا ایمیل خود را وارد کنید. برای ثبت‌نام با ایمیل، رمز عبور تعیین کنید."}
+              "شماره موبایل یا ایمیل خود را وارد کنید. برای ثبت‌نام با ایمیل رمز عبور الزامی است؛ برای شماره موبایل اختیاری است."}
             {step === "code" &&
               `کد تأیید به ${identifier} ارسال شد.`}
             {step === "role" &&
@@ -254,21 +254,19 @@ function SignupForm() {
                     className="w-full rounded-xl border border-line bg-bg px-3.5 py-2.5 text-right text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     dir="rtl"
                   />
-                  {isEmail && (
-                    <div className="mt-4">
-                      <label className="mb-1.5 block text-sm font-medium text-muted">
-                        رمز عبور
-                      </label>
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="حداقل ۸ کاراکتر"
-                        className="w-full rounded-xl border border-line bg-bg px-3.5 py-2.5 text-right text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                        dir="ltr"
-                      />
-                    </div>
-                  )}
+                  <div className="mt-4">
+                    <label className="mb-1.5 block text-sm font-medium text-muted">
+                      رمز عبور {isEmail && <span className="text-subtle">(الزامی)</span>}
+                    </label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="حداقل ۸ کاراکتر"
+                      className="w-full rounded-xl border border-line bg-bg px-3.5 py-2.5 text-right text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      dir="ltr"
+                    />
+                  </div>
                 </div>
 
                 {error && (

@@ -6,14 +6,14 @@ import {
   hashSessionToken,
   setSessionCookie,
 } from "@/lib/auth/session";
-import { hashPassword, passwordStrengthIssues } from "@/lib/auth/password";
+import { hashPassword, passwordStrengthIssues, normalizeEmail } from "@/lib/auth/password";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
     const phone = typeof body.phone === "string" ? body.phone.trim() : "";
-    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const email = typeof body.email === "string" ? normalizeEmail(body.email) : "";
     const password = typeof body.password === "string" ? body.password : "";
 
     if (!phone && !email) {
@@ -23,17 +23,15 @@ export async function POST(request: Request) {
       );
     }
 
-    if (email) {
-      if (!password) {
-        return NextResponse.json(
-          { error: "رمز عبور الزامی است." },
-          { status: 400 }
-        );
-      }
-      const strengthIssue = passwordStrengthIssues(password);
-      if (strengthIssue) {
-        return NextResponse.json({ error: strengthIssue }, { status: 400 });
-      }
+    let strengthIssue: string | null = null;
+    if (password) {
+      strengthIssue = passwordStrengthIssues(password);
+    } else if (email) {
+      strengthIssue = "رمز عبور الزامی است.";
+    }
+
+    if (strengthIssue) {
+      return NextResponse.json({ error: strengthIssue }, { status: 400 });
     }
 
     let user = null;
@@ -62,18 +60,19 @@ export async function POST(request: Request) {
       }
     }
 
+    const passwordHash = password ? await hashPassword(password) : null;
+
     if (!user) {
-      const passwordHash = email ? await hashPassword(password) : null;
       user = await prisma.user.create({
         data: email
           ? { email, emailVerified: new Date(), role: null, passwordHash }
-          : { phone, role: null },
+          : { phone, role: null, passwordHash },
       });
     } else {
-      if (email && !user.passwordHash) {
+      if (!user.passwordHash && passwordHash) {
         user = await prisma.user.update({
           where: { id: user.id },
-          data: { passwordHash: await hashPassword(password) },
+          data: { passwordHash },
         });
       }
     }

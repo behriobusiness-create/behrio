@@ -36,7 +36,6 @@ function LoginForm() {
   const [step, setStep] = useState<"identifier" | "code">("identifier");
   const [method, setMethod] = useState<"otp" | "password">("otp");
   const [password, setPassword] = useState("");
-  const [passwordEmail, setPasswordEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [resendIn, setResendIn] = useState(0);
@@ -78,12 +77,6 @@ function LoginForm() {
 
     try {
       const isEmail = identifier.includes("@");
-      if (isEmail) {
-        setMethod("password");
-        setPasswordEmail(identifier.trim());
-        setError("برای ورود با ایمیل باید رمز عبور وارد کنید.");
-        return;
-      }
       const res = await fetch(
         isEmail ? "/api/auth/email/request-otp" : "/api/auth/send-otp",
         {
@@ -167,9 +160,9 @@ function LoginForm() {
     event.preventDefault();
     setError("");
 
-    const email = passwordEmail.trim();
-    if (!email) {
-      setError("ایمیل را وارد کنید.");
+    const value = identifier.trim();
+    if (!value) {
+      setError("شماره موبایل یا ایمیل را وارد کنید.");
       return;
     }
     if (!password) {
@@ -180,11 +173,17 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const isEmail = value.includes("@");
+      const res = await fetch(
+        isEmail ? "/api/auth/login-password" : "/api/auth/login-password-phone",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            isEmail ? { email: value, password } : { phone: value, password }
+          ),
+        }
+      );
 
       const data = await res.json();
 
@@ -217,7 +216,7 @@ function LoginForm() {
             {step === "identifier" &&
               (method === "otp"
                 ? "شماره موبایل یا ایمیل حساب خود را وارد کنید."
-                : "با ایمیل و رمز عبور خود وارد شوید.")}
+                : "با شماره موبایل یا ایمیل و رمز عبور خود وارد شوید.")}
             {step === "code" &&
               `کد تأیید به ${identifier} ارسال شد.`}
           </p>
@@ -251,7 +250,7 @@ function LoginForm() {
                       : "text-subtle hover:text-fg"
                   }`}
                 >
-                  ایمیل و رمز عبور
+                  ایمیل/شماره و رمز عبور
                 </button>
               </div>
             )}
@@ -291,15 +290,14 @@ function LoginForm() {
               <form onSubmit={handlePasswordLogin} className="space-y-4">
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-muted">
-                    ایمیل
+                    شماره موبایل یا ایمیل
                   </label>
                   <input
-                    type="email"
-                    value={passwordEmail}
-                    onChange={(e) => setPasswordEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="مثلاً 09120000000 یا you@example.com"
                     className="w-full rounded-xl border border-line bg-bg px-3.5 py-2.5 text-right text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                    dir="ltr"
+                    dir="rtl"
                   />
                 </div>
 

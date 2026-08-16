@@ -11,6 +11,7 @@ import {
   hashSessionToken,
   setSessionCookie,
 } from "@/lib/auth/session";
+import { hashPassword } from "@/lib/auth/password";
 import { isRateLimited } from "@/lib/rate-limit";
 
 const MAX_ATTEMPTS = MAX_OTP_ATTEMPTS;
@@ -32,6 +33,7 @@ export async function POST(request: Request) {
 
     const phone = typeof body.phone === "string" ? body.phone.trim() : "";
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const password = typeof body.password === "string" ? body.password : "";
     const mode = body.mode === "login" ? "login" : body.mode === "signup" ? "signup" : null;
 
     const identifier = phone || email;
@@ -139,6 +141,7 @@ export async function POST(request: Request) {
         data: {
           phone,
           role: null,
+          ...(password ? { passwordHash: await hashPassword(password) } : {}),
         },
       });
     }
@@ -149,6 +152,7 @@ export async function POST(request: Request) {
           email,
           emailVerified: new Date(),
           role: null,
+          ...(password ? { passwordHash: await hashPassword(password) } : {}),
         },
       });
     }
