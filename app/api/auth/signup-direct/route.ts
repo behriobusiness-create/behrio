@@ -6,6 +6,7 @@ import {
   hashSessionToken,
   setSessionCookie,
 } from "@/lib/auth/session";
+import { hashPassword, passwordStrengthIssues } from "@/lib/auth/password";
 
 export async function POST(request: Request) {
   try {
@@ -13,12 +14,26 @@ export async function POST(request: Request) {
 
     const phone = typeof body.phone === "string" ? body.phone.trim() : "";
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const password = typeof body.password === "string" ? body.password : "";
 
     if (!phone && !email) {
       return NextResponse.json(
         { error: "شماره موبایل یا ایمیل الزامی است." },
         { status: 400 }
       );
+    }
+
+    if (email) {
+      if (!password) {
+        return NextResponse.json(
+          { error: "رمز عبور الزامی است." },
+          { status: 400 }
+        );
+      }
+      const strengthIssue = passwordStrengthIssues(password);
+      if (strengthIssue) {
+        return NextResponse.json({ error: strengthIssue }, { status: 400 });
+      }
     }
 
     let user = null;
@@ -29,22 +44,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "این حساب غیرفعال است." }, { status: 403 });
     }
 
-    if (user && user.role !== null) {
-      return NextResponse.json(
-        {
-          error:
-            "این حساب از قبل وجود دارد. برای ورود به صفحه «ورود» بروید.",
-        },
-        { status: 409 }
-      );
+    if (user) {
+      if (user.email && email && user.passwordHash && user.role !== null) {
+        return NextResponse.json(
+          {
+            error:
+              "این حساب از قبل وجود دارد. برای ورود به صفحه «ورود» بروید.",
+          },
+          { status: 409 }
+        );
+      }
+      if (email && !user.email) {
+        return NextResponse.json(
+          { error: "این حساب از قبل وجود دارد. برای ورود به صفحه «ورود» بروید." },
+          { status: 409 }
+        );
+      }
     }
 
     if (!user) {
+      const passwordHash = email ? await hashPassword(password) : null;
       user = await prisma.user.create({
         data: email
-          ? { email, emailVerified: new Date(), role: null }
+          ? { email, emailVerified: new Date(), role: null, passwordHash }
           : { phone, role: null },
       });
+    } else {
+      if (email && !user.passwordHash) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { passwordHash: await hashPassword(password) },
+        });
+      }
     }
 
     const sessionToken = generateSessionToken();

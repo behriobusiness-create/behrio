@@ -78,6 +78,12 @@ function LoginForm() {
 
     try {
       const isEmail = identifier.includes("@");
+      if (isEmail) {
+        setMethod("password");
+        setPasswordEmail(identifier.trim());
+        setError("برای ورود با ایمیل باید رمز عبور وارد کنید.");
+        return;
+      }
       const res = await fetch(
         isEmail ? "/api/auth/email/request-otp" : "/api/auth/send-otp",
         {

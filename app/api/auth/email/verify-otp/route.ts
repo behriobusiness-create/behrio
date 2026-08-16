@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { normalizeEmail } from "@/lib/auth/password";
+import { normalizeEmail, passwordStrengthIssues, hashPassword } from "@/lib/auth/password";
 import {
   isEmailOtpExpired,
   MAX_EMAIL_OTP_ATTEMPTS,
@@ -50,12 +50,30 @@ export async function POST(request: Request) {
       ? ((body as { code: string }).code as string).trim()
       : "";
 
+    const password =
+      typeof (body as { password?: unknown })?.password === "string"
+        ? ((body as { password: string }).password as string)
+        : "";
+
     const mode =
       (body as { mode?: unknown })?.mode === "login"
         ? "login"
+
         : (body as { mode?: unknown })?.mode === "signup"
           ? "signup"
           : null;
+
+    if (mode === "signup" && !password) {
+      return NextResponse.json(
+        { error: "رمز عبور الزامی است." },
+        { status: 400 }
+      );
+    }
+
+    const strengthIssue = mode === "signup" ? passwordStrengthIssues(password) : null;
+    if (strengthIssue) {
+      return NextResponse.json({ error: strengthIssue }, { status: 400 });
+    }
 
     if (!email || !EMAIL_PATTERN.test(email) || !/^\d{6}$/.test(code)) {
       return NextResponse.json(
@@ -173,11 +191,13 @@ export async function POST(request: Request) {
     }
 
     if (!user) {
+      const passwordHash = mode === "signup" ? await hashPassword(password) : null;
       user = await prisma.user.create({
         data: {
           email,
           emailVerified: new Date(),
           role: null,
+          passwordHash,
         },
       });
     } else if (!user.emailVerified) {

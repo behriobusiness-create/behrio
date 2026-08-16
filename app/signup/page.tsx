@@ -21,9 +21,12 @@ function SignupForm() {
   const router = useRouter();
 
   const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [role, setRole] = useState<Role | null>(null);
   const [devCode, setDevCode] = useState("");
+
+  const isEmail = identifier.includes("@");
 
   const [step, setStep] = useState<"identifier" | "code" | "role">(
     "identifier"
@@ -53,15 +56,23 @@ function SignupForm() {
       return;
     }
 
+    const isEmail = identifier.includes("@");
+
+    if (isEmail && password.length < 8) {
+      setError("برای ثبت‌نام با ایمیل، رمز عبور حداقل ۸ کاراکتری الزامی است.");
+      return;
+    }
+
     if (skipOtp) {
       setLoading(true);
       try {
-        const isEmail = identifier.includes("@");
         const res = await fetch("/api/auth/signup-direct", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
-            isEmail ? { email: identifier } : { phone: identifier }
+            isEmail
+              ? { email: identifier, password }
+              : { phone: identifier }
           ),
         });
 
@@ -136,7 +147,7 @@ function SignupForm() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ...(isEmail ? { email: identifier } : { phone: identifier }),
+            ...(isEmail ? { email: identifier, password } : { phone: identifier }),
             code,
             mode: "signup",
           }),
@@ -222,7 +233,7 @@ function SignupForm() {
           </h1>
           <p className="mt-2 text-sm text-muted">
             {step === "identifier" &&
-              "شماره موبایل یا ایمیل خود را وارد کنید تا کد تأیید دریافت کنید."}
+              "شماره موبایل یا ایمیل خود را وارد کنید. برای ثبت‌نام با ایمیل، رمز عبور تعیین کنید."}
             {step === "code" &&
               `کد تأیید به ${identifier} ارسال شد.`}
             {step === "role" &&
@@ -243,6 +254,21 @@ function SignupForm() {
                     className="w-full rounded-xl border border-line bg-bg px-3.5 py-2.5 text-right text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     dir="rtl"
                   />
+                  {isEmail && (
+                    <div className="mt-4">
+                      <label className="mb-1.5 block text-sm font-medium text-muted">
+                        رمز عبور
+                      </label>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="حداقل ۸ کاراکتر"
+                        className="w-full rounded-xl border border-line bg-bg px-3.5 py-2.5 text-right text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                        dir="ltr"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {error && (
