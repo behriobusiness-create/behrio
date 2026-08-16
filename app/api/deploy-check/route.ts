@@ -23,7 +23,10 @@ export async function GET() {
   let db;
   if (process.env.DATABASE_URL) {
     try {
-      const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+      const adapter = new PrismaPg({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+      });
       const prisma = new PrismaClient({ adapter });
       await prisma.$queryRaw`SELECT 1`;
       await prisma.$disconnect();
