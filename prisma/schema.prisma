@@ -72,6 +72,7 @@ model CreatorProfile {
   displayName        String
   bio                String?
   instagramHandle    String?
+  instagramScreenshotUrl String?
   telegramHandle     String?
   followerCount      Int?
   averageViews       Int?
@@ -376,6 +377,16 @@ model ApiRequestLog {
   @@index([userId])
   @@index([campaignId])
   @@index([apiKeyId])
+  @@index([createdAt])
+}
+
+model StoredFile {
+  key        String   @id
+  data       Bytes
+  mimeType   String
+  size       Int
+  createdAt  DateTime @default(now())
+
   @@index([createdAt])
 }
 

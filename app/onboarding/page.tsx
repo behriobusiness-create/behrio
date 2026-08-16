@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { labelClass, inputClass } from "@/components/ui";
+import { IconUpload, IconCheck, IconX } from "@/components/icons";
 
 type Role = "CREATOR" | "BUSINESS";
 
@@ -15,6 +16,9 @@ export default function OnboardingPage() {
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
+  const [instagramScreenshot, setInstagramScreenshot] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const instagramFileRef = useRef<HTMLInputElement>(null);
 
   const [companyName, setCompanyName] = useState("");
   const [website, setWebsite] = useState("");
@@ -22,6 +26,45 @@ export default function OnboardingPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  async function handleInstagramUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      setError("فقط PNG، JPG یا WEBP مجاز است.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("حجم تصویر باید کمتر از ۵ مگابایت باشد.");
+      return;
+    }
+
+    setUploading(true);
+    setError("");
+
+    try {
+      const body = new FormData();
+      body.append("file", file);
+
+      const res = await fetch("/api/uploads", {
+        method: "POST",
+        body,
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "آپلود ناموفق بود.");
+        return;
+      }
+
+      setInstagramScreenshot(data.url);
+    } catch {
+      setError("خطا در خواندن تصویر.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,12 +74,22 @@ export default function OnboardingPage() {
       return;
     }
 
+    if (role === "CREATOR" && !instagramHandle.trim()) {
+      setError("آدرس اینستاگرام الزامی است.");
+      return;
+    }
+
+    if (role === "CREATOR" && !instagramScreenshot) {
+      setError("آپلود اسکرین‌شات اینستاگرام الزامی است.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     const payload =
       role === "CREATOR"
-        ? { role, displayName, bio, instagramHandle }
+        ? { role, displayName, bio, instagramHandle, instagramScreenshotUrl: instagramScreenshot }
         : { role, companyName, website, description };
 
     try {
@@ -152,10 +205,57 @@ export default function OnboardingPage() {
                       <input
                         value={instagramHandle}
                         onChange={(event) => setInstagramHandle(event.target.value)}
+                        required
                         placeholder="@username"
                         className={inputClass}
                         dir="ltr"
                       />
+                    </div>
+                    <div>
+                      <label className={labelClass}>اسکرین‌شات اینستاگرام</label>
+                      <input
+                        ref={instagramFileRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={handleInstagramUpload}
+                        className="hidden"
+                      />
+                      {instagramScreenshot ? (
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={instagramScreenshot}
+                            alt="پیش‌نمایش اسکرین‌شات اینستاگرام"
+                            className="h-16 w-16 rounded-xl border border-line object-cover"
+                          />
+                          <span className="text-sm text-success">
+                            <IconCheck className="ml-1 inline h-4 w-4" />
+                            آپلود شد
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInstagramScreenshot("");
+                              if (instagramFileRef.current) instagramFileRef.current.value = "";
+                            }}
+                            className="text-xs font-medium text-danger"
+                          >
+                            حذف
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => instagramFileRef.current?.click()}
+                          disabled={uploading}
+                          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-surface px-4 py-6 text-sm text-muted transition-colors hover:border-primary hover:text-fg disabled:opacity-50"
+                        >
+                          <IconUpload className="h-4 w-4" />
+                          {uploading ? "در حال آپلود…" : "انتخاب و آپلود اسکرین‌شات اینستاگرام"}
+                        </button>
+                      )}
+                      <p className="mt-1.5 text-xs text-subtle">
+                        از پروفایل اینستاگرام خود اسکرین‌شات بگیرید (شامل نام کاربری و آمار).
+                      </p>
                     </div>
                   </>
                 ) : (

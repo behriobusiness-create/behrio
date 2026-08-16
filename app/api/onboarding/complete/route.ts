@@ -8,6 +8,7 @@ type CompleteSignupBody =
       displayName: string;
       bio?: string;
       instagramHandle?: string;
+      instagramScreenshotUrl?: string;
       telegramHandle?: string;
     }
   | {
@@ -64,6 +65,20 @@ export async function POST(request: Request) {
         );
       }
 
+      if (!body.instagramHandle?.trim()) {
+        return NextResponse.json(
+          { error: "آدرس اینستاگرام الزامی است." },
+          { status: 400 }
+        );
+      }
+
+      if (!body.instagramScreenshotUrl?.trim()) {
+        return NextResponse.json(
+          { error: "آپلود اسکرین‌شات اینستاگرام الزامی است." },
+          { status: 400 }
+        );
+      }
+
       if (existingUser.role !== null && existingUser.role !== "CREATOR") {
         return NextResponse.json(
           { error: "Account type has already been selected" },
@@ -90,6 +105,7 @@ export async function POST(request: Request) {
             displayName: body.displayName.trim(),
             bio: body.bio?.trim() || null,
             instagramHandle: body.instagramHandle?.trim() || null,
+            instagramScreenshotUrl: body.instagramScreenshotUrl?.trim() || null,
             telegramHandle: body.telegramHandle?.trim() || null,
           },
         });

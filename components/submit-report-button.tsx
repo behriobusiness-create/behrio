@@ -47,17 +47,12 @@ export function SubmitReportButton({
     setError("");
 
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error("read-error"));
-        reader.readAsDataURL(file);
-      });
+      const body = new FormData();
+      body.append("file", file);
 
       const res = await fetch("/api/uploads", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dataUrl }),
+        body,
       });
       const data = await res.json();
 
@@ -90,14 +85,19 @@ export function SubmitReportButton({
       return;
     }
 
+    if (!screenshot) {
+      setError("آپلود اسکرین‌شات مدرک الزامی است.");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const payload: Record<string, unknown> = {
         campaignId,
         claimedImpressions: impressions,
+        screenshotUrl: screenshot,
       };
-      if (screenshot) payload.screenshotUrl = screenshot;
       if (note.trim()) payload.note = note.trim();
 
       const res = await fetch("/api/campaign-reports", {
@@ -224,7 +224,7 @@ export function SubmitReportButton({
 
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-muted">
-                  اسکرین‌شات مدرک (اختیاری)
+                  اسکرین‌شات مدرک (الزامی)
                 </label>
                 <input
                   ref={fileRef}

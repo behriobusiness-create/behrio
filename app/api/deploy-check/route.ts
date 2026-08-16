@@ -18,6 +18,9 @@ export async function GET() {
     AUTH_GOOGLE_ID: Boolean(process.env.AUTH_GOOGLE_ID),
     AUTH_GOOGLE_SECRET: Boolean(process.env.AUTH_GOOGLE_SECRET),
     NEXTAUTH_SECRET: Boolean(process.env.NEXTAUTH_SECRET),
+    STORAGE_DRIVER: process.env.STORAGE_DRIVER ?? "db (default, DisSQL-Free)",
+    SUPABASE_URL: Boolean(process.env.SUPABASE_URL),
+    SUPABASE_SERVICE_ROLE_KEY: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
   };
 
   let db;

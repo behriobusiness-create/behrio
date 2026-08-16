@@ -118,14 +118,23 @@ export async function POST(request: Request) {
       );
     }
 
+    const screenshotUrl =
+      typeof body.screenshotUrl === "string" && body.screenshotUrl.trim()
+        ? body.screenshotUrl.trim()
+        : "";
+
+    if (!screenshotUrl) {
+      return NextResponse.json(
+        { error: "آپلود اسکرین‌شات مدرک الزامی است." },
+        { status: 400 }
+      );
+    }
+
     const report = await prisma.campaignReport.create({
       data: {
         campaignId: campaign.id,
         creatorId: creatorProfile.id,
-        screenshotUrl:
-          typeof body.screenshotUrl === "string" && body.screenshotUrl.trim()
-            ? body.screenshotUrl.trim()
-            : "",
+        screenshotUrl,
         claimedImpressions: rawImpressions,
         note:
           typeof body.note === "string" && body.note.trim()
