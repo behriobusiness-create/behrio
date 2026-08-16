@@ -17,6 +17,7 @@ function createClient(): PrismaClient {
     max: POOL_MAX,
     connectionTimeoutMillis: POOL_TIMEOUT_MS,
     idleTimeoutMillis: 0,
+    ssl: { rejectUnauthorized: false },
   });
 
   return new PrismaClient({ adapter });
