@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import type { StorageProvider } from "./types";
 import { LocalStorageProvider } from "./local";
 import { S3StorageProvider } from "./s3";
+import { SupabaseStorageProvider } from "./supabase";
 
 export type { StorageProvider, UploadInput, UploadResult } from "./types";
 
@@ -12,6 +13,10 @@ function buildProvider(): StorageProvider {
 
   if (driver === "s3") {
     return new S3StorageProvider();
+  }
+
+  if (driver === "supabase") {
+    return new SupabaseStorageProvider();
   }
 
   return new LocalStorageProvider();

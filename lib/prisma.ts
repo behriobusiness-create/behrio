@@ -2,8 +2,8 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../app/generated/prisma/client";
 
-const POOL_MAX = Number(process.env.DATABASE_POOL_MAX || "10");
-const POOL_TIMEOUT_MS = Number(process.env.DATABASE_POOL_TIMEOUT_MS || "10000");
+const POOL_MAX = Number(process.env.DATABASE_POOL_MAX || "5");
+const POOL_TIMEOUT_MS = Number(process.env.DATABASE_POOL_TIMEOUT_MS || "15000");
 
 function createClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL;

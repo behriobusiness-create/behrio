@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { redirectForRole } from "@/lib/auth/role";
 import { redirect } from "next/navigation";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Badge } from "@/components/ui";
@@ -152,9 +153,11 @@ export default async function BusinessReportsPage() {
                         rel="noopener noreferrer"
                         className="mt-3 inline-block"
                       >
-                        <img
+                        <Image
                           src={report.screenshotUrl}
                           alt="اسکرین‌شات مدرک نمایش"
+                          width={224}
+                          height={128}
                           className="h-32 w-56 rounded-xl border border-line object-cover transition-opacity hover:opacity-80"
                         />
                       </a>

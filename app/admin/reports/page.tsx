@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { redirect } from "next/navigation";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui";
 import { AdminShell } from "@/components/admin-shell";
@@ -102,12 +103,13 @@ export default async function AdminReportsPage() {
                             rel="noopener noreferrer"
                             className="shrink-0"
                           >
-                            <img
+                            <Image
                               src={report.screenshotUrl}
                               alt="مدرک نمایش"
+                              width={144}
+                              height={96}
                               className="h-24 w-36 rounded-xl border border-line object-cover transition-transform hover:scale-[1.02]"
-                            />
-                          </a>
+                            />                          </a>
                         ) : (
                           <div className="flex h-24 w-36 shrink-0 items-center justify-center rounded-xl border border-dashed border-line bg-hover text-center text-[11px] leading-4 text-subtle">
                             بدون

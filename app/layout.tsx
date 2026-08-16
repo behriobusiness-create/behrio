@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Vazirmatn } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const vazirmatn = Vazirmatn({
@@ -35,6 +36,7 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-bg text-fg">
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
