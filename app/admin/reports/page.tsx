@@ -160,7 +160,11 @@ export default async function AdminReportsPage() {
 
                       <div className="shrink-0 lg:text-left">
                         <div className="mb-1 text-[11px] text-muted">اقدام مدیر</div>
-                        <ReportReviewActions reportId={report.id} status={report.status} />
+                        <ReportReviewActions
+                          reportId={report.id}
+                          status={report.status}
+                          claimedImpressions={report.claimedImpressions}
+                        />
                       </div>
                     </div>
                   </li>
